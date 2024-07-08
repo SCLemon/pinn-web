@@ -1,6 +1,6 @@
 <template>
   <div class="main">
-    <div class="config">
+    <div class="config" ref="config">
       <div class="geometry">
         <div class="title">Geometry</div>
         <div class="dimension">
@@ -38,76 +38,41 @@
         </div>
       </div>
       <div class="function_part">
-        <div class="title">Equations</div>
+        <div class="title">Parameter</div>
         <div class="add">
-          <el-select class="add-select" v-model="func_selected" placeholder="请選擇">
-            <el-option v-for="item in func_structure" :key="item.function" :label="item.function" :value="item.function"></el-option>
+          <el-select class="add-select" v-model="parameter_type" placeholder="请選擇">
+            <el-option v-for="item in parameter" :key="item" :label="item" :value="item"></el-option>
+            <el-option :label="'Code Block'" :value="'Code Block'"></el-option>
           </el-select>
-          <el-button class="add-btn" type="primary" icon="el-icon-plus" @click="addFunction()">新增</el-button>
-        </div>
-        <grid-layout class="layout" :layout.sync="func_layout" :col-num="1" :rowHeight="40" :is-draggable="true" :is-resizable="true"
-              :is-mirrored="false" :vertical-compact="true" :margin="[10, 10]" :use-css-transforms="true">
-          <grid-item class="layout-item" v-for="item in func_layout" :x="item.x" :y="item.y" :w="item.w" :h="item.h" :i="item.i" :key="item.i">
-              <div class="func_name">
-                {{ item.detail.function }}
-                <div class="delete" @click="deleteFunction(item.i,item.detail.function)"><i class="el-icon-delete"></i></div>
-              </div>
-              <div class="property" v-for="(p,id) in item.detail.property" :key="id">
-                {{ typeof p != 'object'? p : p.type}}: 
-                  <el-input class="property-input" v-if="typeof p != 'object' " placeholder="請輸入內容" v-model="func_property_value[`${item.detail.function}_${p}`]"></el-input>
-                  <el-select class="property-select" v-else  placeholder="请選擇" v-model="func_property_value[`${item.detail.function}_${p.type}`]">
-                    <el-option v-for="item in p.options" :key="item" :label="item" :value="item"></el-option>
-                  </el-select>
-              </div>
-          </grid-item>
-        </grid-layout>
-      </div>
-      <div class="function_part">
-        <div class="title">Neural Network Architecture</div>
-        <div class="add">
-          <el-select class="add-select" v-model="nn_selected" placeholder="请選擇">
-            <el-option v-for="item in nn_structure" :key="item.function" :label="item.function" :value="item.function"></el-option>
+          <el-select class="add-select" v-model="parameter_selected" placeholder="请選擇" v-if="parameter_type !='' && parameter_type != 'Code Block'">
+            <el-option v-for="item in options" :key="item.function" :label="item.function" :value="item.function"></el-option>
           </el-select>
-          <el-button class="add-btn" type="primary" icon="el-icon-plus" @click="addNN()">新增</el-button>
+          <el-button class="add-btn" type="primary" icon="el-icon-plus" @click="addItem()">新增</el-button>
         </div>
-        <grid-layout class="layout" :layout.sync="nn_layout" :col-num="1" :rowHeight="40" :is-draggable="true" :is-resizable="true"
-              :is-mirrored="false" :vertical-compact="true" :margin="[10, 10]" :use-css-transforms="true">
-          <grid-item class="layout-item" v-for="item in nn_layout" :x="item.x" :y="item.y" :w="item.w" :h="item.h" :i="item.i" :key="item.i">
-              <div class="func_name">
+        <grid-layout class="layout" :layout.sync="layout" :col-num="1" :rowHeight="40" :is-draggable="true" :is-resizable="true"
+              :is-mirrored="false" :vertical-compact="true" :margin="[10, 10]" :use-css-transforms="true" @layout-updated="updateOrder()">
+          <grid-item class="layout-item" v-for="item in layout" :x="item.x" :y="item.y" :w="item.w" :h="item.h" :i="item.i" :key="item.i">
+              <div v-if="item.type != 'Code Block'">
+                <div class="func_name">
                 {{ item.detail.function }}
-                <div class="delete" @click="deleteNN(item.i,item.detail.function)"><i class="el-icon-delete"></i></div>
+                <div class="delete" @click="deleteItem(item.i)"><i class="el-icon-delete"></i></div>
+                </div>
+                <div class="property" v-for="(p,id) in item.detail.property" :key="id">
+                  {{ typeof p != 'object'? p : p.type}}: 
+                    <el-input class="property-input" v-if="typeof p != 'object' " placeholder="請輸入內容" v-model="layout_values[`${item.i}_${item.detail.function}_${p}`]"></el-input>
+                    <el-select class="property-select" v-else  placeholder="请選擇" v-model="layout_values[`${item.i}_${item.detail.function}_${p.type}`]">
+                      <el-option v-for="item in p.options" :key="item" :label="item" :value="item"></el-option>
+                    </el-select>
+                </div>
               </div>
-              <div class="property" v-for="(p,id) in item.detail.property" :key="id">
-                {{ typeof p != 'object'? p : p.type}}: 
-                  <el-input class="property-input" v-if="typeof p != 'object' " placeholder="請輸入內容" v-model="nn_property_value[`${item.detail.function}_${p}`]"></el-input>
-                  <el-select class="property-select" v-else  placeholder="请選擇" v-model="nn_property_value[`${item.detail.function}_${p.type}`]">
-                    <el-option v-for="item in p.options" :key="item" :label="item" :value="item"></el-option>
-                  </el-select>
-              </div>
-          </grid-item>
-        </grid-layout>
-      </div>
-      <div class="function_part">
-        <div class="title">Constraints</div>
-        <div class="add">
-          <el-select class="add-select" v-model="cs_selected" placeholder="请選擇">
-            <el-option v-for="item in cs_structure" :key="item.function" :label="item.function" :value="item.function"></el-option>
-          </el-select>
-          <el-button class="add-btn" type="primary" icon="el-icon-plus" @click="addContstraint()">新增</el-button>
-        </div>
-        <grid-layout class="layout" :layout.sync="cs_layout" :col-num="1" :rowHeight="40" :is-draggable="true" :is-resizable="true"
-              :is-mirrored="false" :vertical-compact="true" :margin="[10, 10]" :use-css-transforms="true">
-          <grid-item class="layout-item" v-for="item in cs_layout" :x="item.x" :y="item.y" :w="item.w" :h="item.h" :i="item.i" :key="item.i">
-              <div class="func_name">
-                {{ item.detail.function }}
-                <div class="delete" @click="deleteContstraint(item.i,item.detail.function)"><i class="el-icon-delete"></i></div>
-              </div>
-              <div class="property" v-for="(p,id) in item.detail.property" :key="id">
-                {{ typeof p != 'object'? p : p.type}}: 
-                  <el-input class="property-input" v-if="typeof p != 'object' " placeholder="請輸入內容" v-model="cs_property_value[`${item.detail.function}_${p}`]"></el-input>
-                  <el-select class="property-select" v-else  placeholder="请選擇" v-model="cs_property_value[`${item.detail.function}_${p.type}`]">
-                    <el-option v-for="item in p.options" :key="item" :label="item" :value="item"></el-option>
-                  </el-select>
+              <div v-else>
+                <div class="func_name">
+                  {{ item.type }}
+                  <div class="delete" @click="deleteItem(item.i)"><i class="el-icon-delete"></i></div>
+                </div>
+                <div class="inputCode">
+                  <textarea class="textArea" v-model="layout_values[`${item.i}_${item.type}`]"></textarea>
+                </div>
               </div>
           </grid-item>
         </grid-layout>
@@ -125,6 +90,7 @@ import VueGridLayout from 'vue-grid-layout';
 import structure from '../assets/layoutConig.json'
 import StlViewer from './StlViewer.vue'
 import CodeViewer from './CodeViewer.vue'
+import { nanoid } from 'nanoid'
 export default {
   name:'Main',
   components:{
@@ -150,23 +116,13 @@ export default {
         fileList:[]
       },
       // functions block
-      func_operate_idx:0,
-      func_layout:[],
-      func_selected:'',
-      func_existed:[],
-      func_property_value:{},
-      // Neural Network Architecture block
-      nn_operate_idx:0,
-      nn_layout:[],
-      nn_selected:'',
-      nn_existed:[],
-      nn_property_value:{},
-      // Constraint block
-      cs_operate_idx:0,
-      cs_layout:[],
-      cs_selected:'',
-      cs_existed:[],
-      cs_property_value:{}
+      layout:[],
+      orderedLayout:[],
+      layout_values:{},
+      parameter:['Equations','Neural Network Architecture','Constraints'],
+      parameter_type:'',
+      parameter_selected:'',
+      output:{},
     }
   },
   computed:{
@@ -181,6 +137,18 @@ export default {
     // Constraint block
     cs_structure(){
       return structure.Constraint
+    },
+    options(){
+      switch (this.parameter_type) {
+        case 'Equations':
+          return this.func_structure
+        case 'Neural Network Architecture':
+          return this.nn_structure
+        case 'Constraints':
+          return this.cs_structure
+        default:
+          return [];
+      }
     }
   },
   methods:{
@@ -206,79 +174,53 @@ export default {
       this.geo.pos.y = y;
       this.geo.pos.z = z;
     },
-    //functions block
-    addFunction(){
-      if(this.func_existed.includes(this.func_selected) || this.func_selected == '') return
-      var target =this.func_structure[this.func_selected];
-      this.func_layout.push({
-        "x":0,"y":0,"w":1,"h":target.property.length+1.25,"i":this.func_operate_idx,
-        detail:target
+    //parameter block
+    addItem(){
+      if((this.parameter_type != 'Code Block' && (this.parameter_type == '' || this.parameter_selected == '')) || this.parameter_type =='') return
+      if(this.parameter_type != 'Code Block'){
+        var target =this.options[this.parameter_selected];
+        this.layout.push({
+          type:this.parameter_type,
+          "x":0,"y":0,"w":1,"h":target.property.length+1.25,"i":nanoid(),
+          detail:target
+        })
+      }
+      else{
+        this.layout.push({
+          type:this.parameter_type,
+          "x":0,"y":0,"w":1,"h":7.25,"i":nanoid(),
+          detail:''
+        })
+      }
+      this.parameter_type ='';
+      this.parameter_selected ='';
+      this.$nextTick(()=>{
+        var el = this.$refs.config;
+        this.$nextTick(function(){
+          el.scrollTop = el.scrollHeight;
+        })
       })
-      this.func_operate_idx++;
-      this.func_existed.push(this.func_selected);
-      this.func_selected = '';
     },
-    deleteFunction(idx,name){
-      // 清除頁面呈現
-      this.func_layout = this.func_layout.filter(obj=> obj.i != idx);
-      // 取消已選取
-      this.func_existed = this.func_existed.filter(item => item != name);
-      // 取消資料儲存
-      const filteredKeys = Object.keys(this.func_property_value).filter(key => !key.includes(name));
-      this.func_property_value = filteredKeys.reduce((obj, key) => {
-        obj[key] = this.func_property_value[key];
-        return obj;
-      }, {});
+    deleteItem(idx){
+      this.layout = this.layout.filter(obj => obj.i != idx);
+      // 移除 layout_value
+      for (const key in this.layout_values) {
+          if (this.layout_values.hasOwnProperty(key) && key.includes(idx)) {
+              delete this.layout_values[key];
+          }
+      }
     },
-    // Neural Network Architecture block
-    addNN(){
-      if(this.nn_existed.includes(this.nn_selected) || this.nn_selected == '') return
-      var target =this.nn_structure[this.nn_selected];
-      this.nn_layout.push({
-        "x":0,"y":0,"w":1,"h":target.property.length+1.25,"i":this.nn_operate_idx,
-        detail:target
-      })
-      this.nn_operate_idx++;
-      this.nn_existed.push(this.nn_selected);
-      this.nn_selected = '';
+    // 取得 layout 順序
+    updateOrder(){
+      this.orderedLayout = [...this.layout].sort((a, b) => {
+        if (a.y === b.y) {
+          return a.x - b.x;
+        }
+        return a.y - b.y;
+      });
     },
-    deleteNN(idx,name){
-      // 清除頁面呈現
-      this.nn_layout = this.nn_layout.filter(obj=> obj.i != idx);
-      // 取消已選取
-      this.nn_existed = this.nn_existed.filter(item => item != name);
-      // 取消資料儲存
-      const filteredKeys = Object.keys(this.nn_property_value).filter(key => !key.includes(name));
-      this.nn_property_value = filteredKeys.reduce((obj, key) => {
-        obj[key] = this.nn_property_value[key];
-        return obj;
-      }, {});
-    },
-    // Constraint block
-    addContstraint(){
-      if(this.cs_existed.includes(this.cs_selected) || this.cs_selected == '') return
-      var target =this.cs_structure[this.cs_selected];
-      this.cs_layout.push({
-        "x":0,"y":0,"w":1,"h":target.property.length+1.25,"i":this.cs_operate_idx,
-        detail:target
-      })
-      this.cs_operate_idx++;
-      this.cs_existed.push(this.cs_selected);
-      this.cs_selected = '';
-    },
-    deleteContstraint(idx,name){
-      // 清除頁面呈現
-      this.cs_layout = this.cs_layout.filter(obj=> obj.i != idx);
-      // 取消已選取
-      this.cs_existed = this.cs_existed.filter(item => item != name);
-      // 取消資料儲存
-      const filteredKeys = Object.keys(this.cs_property_value).filter(key => !key.includes(name));
-      this.cs_property_value = filteredKeys.reduce((obj, key) => {
-        obj[key] = this.cs_property_value[key];
-        return obj;
-      }, {});
-    },
-    // Mesh 文件處理
+
+    // STL 文件處理
     handleUpload(file){
       var file = file.file
       this.geo.fileList.push(file);
@@ -396,6 +338,7 @@ export default {
   }
   .add-select{
     width: 70%;
+    margin-bottom: 10px;
   }
   .add-btn{
     width: 25%;
@@ -438,5 +381,20 @@ export default {
   }
   .property-select{
     width: 45%;
+  }
+  .inputCode{
+    width: 90%;
+    margin: 0 auto;
+    height: 280px;
+  }
+  .textArea{
+    margin-top: 5px;
+    width: 100%;
+    height: 100%;
+    margin-left: -5px;
+    border: 1px solid rgba(210,210,210);
+  }
+  .textArea:focus{
+    outline: 0;
   }
 </style>
