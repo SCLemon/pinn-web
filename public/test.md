@@ -1,8 +1,4 @@
-<template>
-  <div ref="container" class="container"></div>
-</template>
-
-<script>
+```
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
@@ -43,7 +39,7 @@ export default {
 
         // 創建相機
         this.camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-        this.camera.position.set(5,10, 5);
+        this.camera.position.set(5, 5, 5);
         this.camera.lookAt(0, 0, 0);
 
         // 創建渲染器
@@ -165,11 +161,5 @@ export default {
         }
     }
 }
-</script>
+```
 
-<style scoped>
-    .container{
-        width: 100%;
-        height: 100vh;
-    }
-</style>

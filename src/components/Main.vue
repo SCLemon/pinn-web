@@ -1,5 +1,11 @@
 <template>
   <div class="main">
+    <span class="radio">
+      <el-radio-group v-model="showType">
+        <el-radio-button label="Preview"></el-radio-button>
+        <el-radio-button label="Code"></el-radio-button>
+      </el-radio-group>
+    </span>
     <div class="config" ref="config">
       <div class="geometry">
         <div class="title">Geometry</div>
@@ -22,7 +28,7 @@
             <div class="fileItem" v-for="(item,id) in geo.fileDetail" :key="id">
               <div class="fileTitle">{{ item.file.name }} ({{ (item.file.size/1024).toFixed(2) }} KB)</div>
               <div class="fileOption">
-                name: <input type="text" class="fileOption_name" v-model="item.name"> 
+                name: <input type="text" class="fileOption_name" v-model="item.name"> &nbsp;
                 airtight:
                 <select class="fileOption_airtight" v-model="item.airtight">
                   <option value="True">True</option>
@@ -55,14 +61,14 @@
         <div class="add">
           <el-select class="add-select" v-model="parameter_type" placeholder="请選擇">
             <el-option v-for="item in parameter" :key="item" :label="item" :value="item"></el-option>
-            <!-- <el-option :label="'Code Block'" :value="'Code Block'"></el-option> --> <!-- code block -->
+            <el-option :label="'Code Block'" :value="'Code Block'"></el-option>
           </el-select>
           <el-select class="add-select" v-model="parameter_selected" placeholder="请選擇" v-if="parameter_type !='' && parameter_type != 'Code Block'">
             <el-option v-for="item in options" :key="item.function" :label="item.function" :value="item.function"></el-option>
           </el-select>
           <el-button class="add-btn" type="primary" icon="el-icon-plus" @click="addItem()">新增</el-button>
         </div>
-        <grid-layout class="layout" :layout.sync="layout" :col-num="1" :rowHeight="40" :is-draggable="true" :is-resizable="true"
+        <grid-layout class="layout" :layout.sync="layout" :col-num="1" :rowHeight="40" :is-draggable="isDraggable" :is-resizable="true"
               :is-mirrored="false" :vertical-compact="true" :margin="[10, 10]" :use-css-transforms="true" @layout-updated="updateOrder()">
           <grid-item class="layout-item" v-for="item in layout" :x="item.x" :y="item.y" :w="item.w" :h="item.h" :i="item.i" :key="item.i">
               <div v-if="item.type != 'Code Block'">
@@ -73,33 +79,28 @@
                 <div class="property" v-for="(p,id) in item.detail.property" :key="id">
                   {{ typeof p != 'object'? p : p.type}}: 
                     <el-input class="property-input" v-if="typeof p != 'object' " placeholder="請輸入內容" v-model="layout_values[`${item.i}_${item.detail.function}_${p}`]"></el-input>
-                    <!--
-                      <el-select class="property-select" v-else  placeholder="请選擇" v-model="layout_values[`${item.i}_${item.detail.function}_${p.type}`]">
-                        <el-option v-for="item in p.options" :key="item" :label="item" :value="item"></el-option>
-                      </el-select>
-                    -->
                     <span v-else>
                       <el-input class="property-select"  placeholder="請輸入內容" v-model="layout_values[`${item.i}_${item.detail.function}_${p.type}`]" @focus="tips(p.type,p.options)"></el-input>
                     </span>
                 </div>
               </div>
-              <!-- <div v-else>     // code block
+              <div v-else>
                 <div class="func_name">
                   {{ item.type }}
                   <div class="delete" @click="deleteItem(item.i)"><i class="el-icon-delete"></i></div>
                 </div>
                 <div class="inputCode">
-                  <textarea class="textArea" v-model="layout_values[`${item.i}_${item.type}`]"></textarea>
+                  <textarea class="textArea" @keydown="handleTab" @focus="isDraggable=false" @blur="isDraggable=true" v-model="layout_values[`${item.i}_${item.type}`]"></textarea>
                 </div>
-              </div> -->
+              </div>
           </grid-item>
         </grid-layout>
       </div>
       <el-button type="primary" class="send" @click="collect()" :loading="isSending">{{ isSending?'資料建構中':'確認送出' }}</el-button>
     </div>
     <div class="content">
-      <stl-viewer></stl-viewer>
-      <code-viewer></code-viewer>
+      <stl-viewer v-show="showType=='Preview'"></stl-viewer>
+      <code-viewer v-show="showType=='Code'"></code-viewer>
     </div>
   </div>
 </template>
@@ -109,7 +110,10 @@ import VueGridLayout from 'vue-grid-layout';
 import structure from '../assets/layoutConig.json'
 import StlViewer from './StlViewer.vue'
 import CodeViewer from './CodeViewer.vue'
+import markdownit from 'markdown-it'
 import { nanoid } from 'nanoid'
+import 'highlight.js/styles/atom-one-dark.css';
+import axios from 'axios';
 export default {
   name:'Main',
   components:{
@@ -122,6 +126,7 @@ export default {
   },
   data(){
     return {
+      showType:'Preview',
       // Geometry
       geo:{
         dimension:3,
@@ -145,7 +150,17 @@ export default {
       // output
       isSending:false,
       output:{},
+      // code block
+      highlighted_code:'',
+      isDraggable:true,
     }
+  },
+  watch:{
+    orderedLayout:{
+      handler() {
+        this.getPreviewCode();
+      },
+    },
   },
   computed:{
     // functions block
@@ -174,70 +189,15 @@ export default {
     }
   },
   methods:{
-    // handle output
-    collect(){
-      // this.isSending = true;
-      // 重置輸出物件
-      this.output = {
-        dimensions: 3,
-        scale: 1,
-        center: [0, 0, 0],
-        mesh: [],
-        parameter:[]
-      }
-      this.output.dimensions = this.geo.dimension;
-      this.output.scale = this.geo.factor;
-      this.output.center = [this.geo.pos.x,this.geo.pos.y,this.geo.pos.z];
-
-      // mesh stl
-      this.geo.fileDetail.forEach(obj=>{
-        this.output.mesh.push({
-          uuid: obj.file.uid,
-          name: obj.name,
-          type: "stl",
-          filename: obj.file.name,
-          arguments: ["airtight"],
-          airtight: obj.airtight
-        })
-      })
-      
-      // datas
-      this.orderedLayout.forEach(obj=>{
-        // 建構資料
-        var structure = {
-          uuid:'',
-          name:'',
-          type:'',
-          function:'',
-          arguments:[],
-        };
-        structure.uuid = obj.i
-        structure.function = obj.detail.function;
-        obj.detail.property.forEach(item=>{
-          if(typeof item == 'object') structure.arguments.push(item.type)
-          else structure.arguments.push(item)
-        })
-        switch(obj.type){
-          case 'Equations':
-            structure.type = "pde"
-            break;
-          case 'Neural Network Architecture':
-            structure.type = "arch"
-            break;
-          case 'Constraints':
-            structure.type = 'constraint'
-            break;
-        }
-        // 汲取資料
-        structure.arguments.forEach(item=>{
-          structure[item] = this.layout_values[`${structure.uuid}_${structure.function}_${item}`]
-        })
-        structure.arguments = structure.arguments.filter(obj=>obj!='name'); // 移除多餘的 arguments 參數
-        this.output.parameter.push(structure);
-      })
-      console.log(this.output)
-    },
     // geometry block
+    tips(type,msg) {
+      const h = this.$createElement;
+
+      this.$notify({
+        title: `${type} 填寫格式範例`,
+        message: h('i', { style: 'color: teal'}, msg.join('、'))
+      });
+    },
     changeScale(){
       this.$bus.$emit('handleStlConfig','scale',{
         factor:this.geo.factor
@@ -304,15 +264,6 @@ export default {
         return a.y - b.y;
       });
     },
-    tips(type,msg) {
-      const h = this.$createElement;
-
-      this.$notify({
-        title: `${type} 填寫格式範例`,
-        message: h('i', { style: 'color: teal'}, msg.join('、'))
-      });
-    },
-
     // STL 文件處理
     handleUpload(file){
       var file = file.file
@@ -339,6 +290,105 @@ export default {
     handlePreview(file) {
       return
     },
+
+    // handle output
+    collect(){
+      this.isSending = true;
+      // 重置輸出物件
+      this.output = {
+        dimensions: 3,
+        scale: 1,
+        center: [0, 0, 0],
+        mesh: [],
+        blocks:[]
+      }
+      this.output.dimensions = this.geo.dimension;
+      this.output.scale = this.geo.factor;
+      this.output.center = [this.geo.pos.x,this.geo.pos.y,this.geo.pos.z];
+
+      // mesh stl
+      this.geo.fileDetail.forEach(obj=>{
+        this.output.mesh.push({
+          uuid: obj.file.uid,
+          name: obj.name,
+          type: "stl",
+          filename: obj.file.name,
+          arguments: ["airtight"],
+          airtight: obj.airtight
+        })
+      })
+      
+      // datas
+      this.orderedLayout.forEach(obj=>{
+        // 建構資料
+        if(obj.type != 'Code Block'){
+          var structure = {
+            uuid:'',
+            name:'',
+            type:'',
+            function:'',
+            arguments:[],
+          };
+          structure.uuid = obj.i
+          structure.function = obj.detail.function;
+          obj.detail.property.forEach(item=>{
+            if(typeof item == 'object') structure.arguments.push(item.type)
+            else structure.arguments.push(item)
+          })
+          switch(obj.type){
+            case 'Equations':
+              structure.type = "pde"
+              break;
+            case 'Neural Network Architecture':
+              structure.type = "arch"
+              break;
+            case 'Constraints':
+              structure.type = 'constraint'
+              break;
+          }
+          // 汲取資料
+          structure.arguments.forEach(item=>{
+            structure[item] = this.layout_values[`${structure.uuid}_${structure.function}_${item}`]
+          })
+          structure.arguments = structure.arguments.filter(obj=>obj!='name'); // 移除多餘的 arguments 參數
+          this.output.blocks.push(structure);
+        }
+        else{ // code block
+          var code = this.layout_values[`${obj.i}_${obj.type}`]
+          this.output.blocks.push({
+            uuid:obj.i,
+            type:obj.type,
+            code:code
+          })
+        }
+      })
+      console.log(this.output)
+      this.isSending = false;
+      this.send(); // 發送請求
+    },
+    send(){
+
+    },
+    // preview code
+    getPreviewCode(){
+      axios.get('./test.md')
+      .then(res=>{
+        const md = markdownit()
+        res.data = md.render(res.data)
+        this.$bus.$emit('setCode',res.data)
+      })
+      .catch(e=>{
+        console.log(e)
+        this.$notify.error({
+          title: '系統提示',
+          message: '預覽代碼生成失敗！',
+        });
+      })
+    },
+    // code block
+    handleTab(event){
+      if (event.key === 'Tab') event.preventDefault();
+    }
   }
 }
 </script>
@@ -350,7 +400,7 @@ export default {
   }
   /* 左列樣式 */
   .config{
-    width: 26.5%;
+    width: 27.5%;
     height: 100vh;
     box-shadow: 2px 0 10px gray;
     overflow-y: scroll;
@@ -358,7 +408,7 @@ export default {
     padding-right: 10px;
   }
   .content{
-    width: 73.5%;
+    width: 72.5%;
     height: 100vh;
   }
   /* geometry */
@@ -367,6 +417,12 @@ export default {
     line-height: 40px;
     margin-left: 10px;
     font-size: 18px;
+  }
+  .radio{
+    position: absolute;
+    right: 10px;
+    top:10px;
+    z-index: 1002;
   }
   .dimension{
     margin-left: 10px;
@@ -387,9 +443,6 @@ export default {
   .fileList{
     width: 95%;
     margin-top: 10px;
-  }
-  .fileItem{
-    
   }
   .fileTitle{
     line-height: 2;
@@ -511,6 +564,7 @@ export default {
     width: 90%;
     margin: 0 auto;
     height: 280px;
+    position: relative;
   }
   .textArea{
     margin-top: 5px;
@@ -518,6 +572,9 @@ export default {
     height: 100%;
     margin-left: -5px;
     border: 1px solid rgba(210,210,210);
+    position: absolute;
+    top:0;
+    left:0;
   }
   .textArea:focus{
     outline: 0;
