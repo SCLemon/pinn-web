@@ -151,7 +151,6 @@ export default {
       isSending:false,
       output:{},
       // code block
-      highlighted_code:'',
       isDraggable:true,
     }
   },
