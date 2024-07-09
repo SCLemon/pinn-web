@@ -73,9 +73,14 @@
                 <div class="property" v-for="(p,id) in item.detail.property" :key="id">
                   {{ typeof p != 'object'? p : p.type}}: 
                     <el-input class="property-input" v-if="typeof p != 'object' " placeholder="請輸入內容" v-model="layout_values[`${item.i}_${item.detail.function}_${p}`]"></el-input>
-                    <el-select class="property-select" v-else  placeholder="请選擇" v-model="layout_values[`${item.i}_${item.detail.function}_${p.type}`]">
-                      <el-option v-for="item in p.options" :key="item" :label="item" :value="item"></el-option>
-                    </el-select>
+                    <!--
+                      <el-select class="property-select" v-else  placeholder="请選擇" v-model="layout_values[`${item.i}_${item.detail.function}_${p.type}`]">
+                        <el-option v-for="item in p.options" :key="item" :label="item" :value="item"></el-option>
+                      </el-select>
+                    -->
+                    <span v-else>
+                      <el-input class="property-select"  placeholder="請輸入內容" v-model="layout_values[`${item.i}_${item.detail.function}_${p.type}`]" @focus="tips(p.type,p.options)"></el-input>
+                    </span>
                 </div>
               </div>
               <!-- <div v-else>     // code block
@@ -299,6 +304,14 @@ export default {
         return a.y - b.y;
       });
     },
+    tips(type,msg) {
+      const h = this.$createElement;
+
+      this.$notify({
+        title: `${type} 填寫格式範例`,
+        message: h('i', { style: 'color: teal'}, msg.join('、'))
+      });
+    },
 
     // STL 文件處理
     handleUpload(file){
@@ -492,7 +505,7 @@ export default {
     margin-left: 5px;
   }
   .property-select{
-    width: 45%;
+    width: 35%;
   }
   .inputCode{
     width: 90%;
