@@ -86,23 +86,27 @@ export default {
                 }
             });
         },
-        getCenter(flag){
-            const totalCenter = new THREE.Vector3();
+        getCenter(flag){ // 待優化
+            const meshes = [];
+            const overallCenter = new THREE.Vector3();
             this.scene.traverse((object) => {
-                if (object instanceof THREE.Mesh) {
-                    const geometry = object.geometry;
-                    geometry.computeBoundingBox();
-                    const center = new THREE.Vector3();
-                    geometry.boundingBox.getCenter(center);
-                    totalCenter.add(center);
-                }
+                if (object instanceof THREE.Mesh) meshes.push(object)
             });
-            const numMeshes = this.scene.children.filter(object => object instanceof THREE.Mesh).length;
-            if (numMeshes > 0) {
-                totalCenter.divideScalar(numMeshes);
+            meshes.forEach(mesh => {
+                mesh.geometry.computeBoundingBox();
+                const boundingBox = mesh.geometry.boundingBox;
+                const center = new THREE.Vector3();
+                boundingBox.getCenter(center);
+                overallCenter.add(center);
+            });
+            overallCenter.divideScalar(meshes.length);
+            if(flag){
+                meshes.forEach(mesh => {
+                    mesh.geometry.translate(-overallCenter.x, -overallCenter.y, -overallCenter.z);
+                });
+                overallCenter.normalize();
             }
-            if(flag || flag == undefined) totalCenter.normalize();
-            this.$bus.$emit('setCenter',totalCenter.x,totalCenter.y,totalCenter.z);
+            this.$bus.$emit('setCenter',overallCenter.x,overallCenter.y,overallCenter.z);
         },
         // 調整參數
         handleConfig(prop,config){
@@ -144,10 +148,11 @@ export default {
                 const material = new THREE.MeshPhongMaterial({ color: 0x606060, specular: 0x111111, shininess: 200, wireframe: config.wireframe });
                 // 添加資料
                 this.mesh = new THREE.Mesh(geometry, material);
-                this.mesh.name = file.name;
+                this.mesh.name = file.uid;
                 
-                // 調整大小
                 const boundingBox = new THREE.Box3().setFromObject(this.mesh);
+
+                // 調整大小
                 const size = new THREE.Vector3();
                 boundingBox.getSize(size);
                 const maxDimension = Math.max(size.x, size.y, size.z);

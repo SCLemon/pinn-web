@@ -18,6 +18,19 @@
             <div class="el-upload__text">將文件拖到此處，或<em>點擊上傳</em></div>
             <div slot="tip" class="el-upload__tip">只能上傳 STL 文件</div>
           </el-upload>
+          <div class="fileList">
+            <div class="fileItem" v-for="(item,id) in geo.fileDetail" :key="id">
+              <div class="fileTitle">{{ item.file.name }} ({{ (item.file.size/1024).toFixed(2) }} KB)</div>
+              <div class="fileOption">
+                name: <input type="text" class="fileOption_name" v-model="item.name"> 
+                airtight:
+                <select class="fileOption_airtight" v-model="item.airtight">
+                  <option value="True">True</option>
+                  <option value="False">False</option>
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="geo_subTitle">Center</div>
         <div class="center">
@@ -42,7 +55,7 @@
         <div class="add">
           <el-select class="add-select" v-model="parameter_type" placeholder="请選擇">
             <el-option v-for="item in parameter" :key="item" :label="item" :value="item"></el-option>
-            <el-option :label="'Code Block'" :value="'Code Block'"></el-option>
+            <!-- <el-option :label="'Code Block'" :value="'Code Block'"></el-option> --> <!-- code block -->
           </el-select>
           <el-select class="add-select" v-model="parameter_selected" placeholder="请選擇" v-if="parameter_type !='' && parameter_type != 'Code Block'">
             <el-option v-for="item in options" :key="item.function" :label="item.function" :value="item.function"></el-option>
@@ -65,7 +78,7 @@
                     </el-select>
                 </div>
               </div>
-              <div v-else>
+              <!-- <div v-else>     // code block
                 <div class="func_name">
                   {{ item.type }}
                   <div class="delete" @click="deleteItem(item.i)"><i class="el-icon-delete"></i></div>
@@ -73,10 +86,11 @@
                 <div class="inputCode">
                   <textarea class="textArea" v-model="layout_values[`${item.i}_${item.type}`]"></textarea>
                 </div>
-              </div>
+              </div> -->
           </grid-item>
         </grid-layout>
       </div>
+      <el-button type="primary" class="send" @click="collect()" :loading="isSending">{{ isSending?'資料建構中':'確認送出' }}</el-button>
     </div>
     <div class="content">
       <stl-viewer></stl-viewer>
@@ -113,7 +127,8 @@ export default {
         pos:{
           x:0,y:0,z:0
         },
-        fileList:[]
+        fileList:[], // 文件呈現用
+        fileDetail:[] // 文件輸出用
       },
       // functions block
       layout:[],
@@ -122,6 +137,8 @@ export default {
       parameter:['Equations','Neural Network Architecture','Constraints'],
       parameter_type:'',
       parameter_selected:'',
+      // output
+      isSending:false,
       output:{},
     }
   },
@@ -152,6 +169,69 @@ export default {
     }
   },
   methods:{
+    // handle output
+    collect(){
+      // this.isSending = true;
+      // 重置輸出物件
+      this.output = {
+        dimensions: 3,
+        scale: 1,
+        center: [0, 0, 0],
+        mesh: [],
+        parameter:[]
+      }
+      this.output.dimensions = this.geo.dimension;
+      this.output.scale = this.geo.factor;
+      this.output.center = [this.geo.pos.x,this.geo.pos.y,this.geo.pos.z];
+
+      // mesh stl
+      this.geo.fileDetail.forEach(obj=>{
+        this.output.mesh.push({
+          uuid: obj.file.uid,
+          name: obj.name,
+          type: "stl",
+          filename: obj.file.name,
+          arguments: ["airtight"],
+          airtight: obj.airtight
+        })
+      })
+      
+      // datas
+      this.orderedLayout.forEach(obj=>{
+        // 建構資料
+        var structure = {
+          uuid:'',
+          name:'',
+          type:'',
+          function:'',
+          arguments:[],
+        };
+        structure.uuid = obj.i
+        structure.function = obj.detail.function;
+        obj.detail.property.forEach(item=>{
+          if(typeof item == 'object') structure.arguments.push(item.type)
+          else structure.arguments.push(item)
+        })
+        switch(obj.type){
+          case 'Equations':
+            structure.type = "pde"
+            break;
+          case 'Neural Network Architecture':
+            structure.type = "arch"
+            break;
+          case 'Constraints':
+            structure.type = 'constraint'
+            break;
+        }
+        // 汲取資料
+        structure.arguments.forEach(item=>{
+          structure[item] = this.layout_values[`${structure.uuid}_${structure.function}_${item}`]
+        })
+        structure.arguments = structure.arguments.filter(obj=>obj!='name'); // 移除多餘的 arguments 參數
+        this.output.parameter.push(structure);
+      })
+      console.log(this.output)
+    },
     // geometry block
     changeScale(){
       this.$bus.$emit('handleStlConfig','scale',{
@@ -224,6 +304,14 @@ export default {
     handleUpload(file){
       var file = file.file
       this.geo.fileList.push(file);
+
+      this.geo.fileDetail.push({ // 新增至文件輸出列表
+        uid:file.uid,
+        file:file,
+        name:'',
+        airtight:"True",
+      })
+
       this.$bus.$emit('loadStlFile',file,{
         wireframe:this.geo.wireframe,
         center_normalize:this.geo.pos_normalize,
@@ -232,7 +320,8 @@ export default {
     },
     handleRemove(file, fileList) {
       this.geo.fileList = fileList
-      this.$bus.$emit('removeStlFile',file.name)
+      this.$bus.$emit('removeStlFile',file.uid);
+      this.geo.fileDetail = this.geo.fileDetail.filter(obj=> obj.uid != file.uid); // 移除文件輸出列表
     },
     handlePreview(file) {
       return
@@ -281,6 +370,29 @@ export default {
     margin-left: 10px;
     margin-top: 10px;
     margin-bottom: 10px;
+  }
+  .fileList{
+    width: 95%;
+    margin-top: 10px;
+  }
+  .fileItem{
+    
+  }
+  .fileTitle{
+    line-height: 2;
+  }
+  .fileOption{
+    line-height: 2;
+  }
+  .fileOption_name,.fileOption_airtight{
+    border: 1px solid rgba(210,210,210);
+    height: 20px;
+  }
+  .fileOption_name:focus{
+    outline: none;
+  }
+  .fileOption_airtight:focus{
+    outline: none;
   }
   .center{
     margin-top: 10px;
@@ -346,7 +458,7 @@ export default {
   }
   /* 移動方塊 */
   .layout{
-    width: 100%;
+    width: 97%;
   }
   .layout-item{
     width: 100%;
@@ -396,5 +508,12 @@ export default {
   }
   .textArea:focus{
     outline: 0;
+  }
+  .send{
+    width:94%;
+    margin: 0 auto;
+    margin-bottom: 20px;
+    margin-left: 10px;
+    margin-top: 10px;
   }
 </style>
