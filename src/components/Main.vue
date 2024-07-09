@@ -133,7 +133,7 @@ export default {
         wireframe:true,
         factor:3,
         factor_normailize:false,
-        pos_normalize:false,
+        pos_normalize:true,
         pos:{
           x:0,y:0,z:0
         },
