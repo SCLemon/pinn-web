@@ -362,7 +362,6 @@ export default {
           })
         }
       })
-      console.log(this.output)
       this.isSending = false;
       this.send(); // 發送請求
     },
