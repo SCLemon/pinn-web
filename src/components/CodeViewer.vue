@@ -1,5 +1,8 @@
 <template>
-        <div v-html="code" class="codeBlock"></div>
+    <div>
+        <div v-html="code" class="codeBlock" v-if="code!=''"></div>
+        <el-empty description="Nothing Here" class="codeBlock"></el-empty>
+    </div>
 </template>
 
 <script>
@@ -33,7 +36,6 @@ export default {
         width: 100%;
         height: 100vh;
         overflow-y: scroll;
-        background: #282c34;
         line-height: 1.5;
     }
 </style>

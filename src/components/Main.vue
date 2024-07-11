@@ -128,6 +128,7 @@ export default {
   },
   data(){
     return {
+      init:false,
       showType:'Preview',
       // Geometry
       geo:{
@@ -159,9 +160,20 @@ export default {
   watch:{
     orderedLayout:{
       handler() {
+        if(this.init){ // 阻止第一次觸發
+          this.getPreviewCode();
+        }
+        this.init++;
+      },
+      immediate:false
+    },
+    layout_values:{
+      handler() {
+        console.log('here')
         this.getPreviewCode();
       },
-    },
+      deep:true,
+    }
   },
   computed:{
     // functions block
