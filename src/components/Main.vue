@@ -519,7 +519,7 @@ export default {
   .normalize_btn{
     position: absolute;
     top:0;
-    right: 10px;
+    right: 13px;
   }
   .scale{
     height: 40px;
@@ -559,7 +559,7 @@ export default {
     width: 100%;
     box-shadow: 4px 4px 10px gray;
     padding-left: 5px;
-    border-radius: 3px;
+    border-radius: 7px;
   }
   .func_name{
     font-size: 18px;
@@ -613,7 +613,7 @@ export default {
     width: 100%;
     height: 100%;
     margin-left: -5px;
-    border: 1px solid rgba(210,210,210);
+    border: 0.1px solid rgba(210,210,210);
     position: absolute;
     top:0;
     left:0;
