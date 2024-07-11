@@ -87,10 +87,12 @@
               <div v-else>
                 <div class="func_name">
                   {{ item.type }}
+                  <div class="upload_code" @click="uploadCode(item.i)"><i class="el-icon-upload2"></i></div>
                   <div class="delete" @click="deleteItem(item.i)"><i class="el-icon-delete"></i></div>
+                  <input type="file" :ref="`${item.i}_code_file`" class="code_file" @change="handleUploadCode(item.i,item.type)">
                 </div>
                 <div class="inputCode">
-                  <textarea class="textArea" @keydown="handleTab" @focus="isDraggable=false" @blur="isDraggable=true" v-model="layout_values[`${item.i}_${item.type}`]"></textarea>
+                  <textarea class="textArea" :ref="`${item.i}_textArea`" @keydown="handleTab" @focus="isDraggable=false" @blur="isDraggable=true" v-model="layout_values[`${item.i}_${item.type}`]"></textarea>
                 </div>
               </div>
           </grid-item>
@@ -254,6 +256,22 @@ export default {
           }
       }
     },
+    // code block
+    uploadCode(idx){
+      this.$refs[`${idx}_code_file`][0].click();
+    },
+    handleUploadCode(idx,type){
+      this.$refs[`${idx}_textArea`][0].value='';
+      var file = this.$refs[`${idx}_code_file`][0].files[0];
+      if(file){
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const content = event.target.result;
+            this.layout_values[`${idx}_${type}`] = content;
+        };
+        reader.readAsText(file);
+      }
+    },
     // 取得 layout 順序
     updateOrder(){
       this.orderedLayout = [...this.layout].sort((a, b) => {
@@ -362,6 +380,7 @@ export default {
         }
       })
       this.isSending = false;
+      console.log(this.output)
       this.send(); // 發送請求
     },
     send(){
@@ -546,6 +565,19 @@ export default {
   }
   .delete:hover{
     cursor: pointer;
+  }
+  .upload_code{
+    position: absolute;
+    right: 30px;
+    height: 40px;
+    top:0;
+    font-size: 14px;
+  }
+  .upload_code:hover{
+    cursor: pointer;
+  }
+  .code_file{
+    display: none;
   }
   .property{
     margin-top: 10px;
