@@ -153,6 +153,7 @@ export default {
       // output
       isSending:false,
       output:{},
+      totalCode:'',
       // code block
       isDraggable:true,
     }
@@ -169,7 +170,6 @@ export default {
     },
     layout_values:{
       handler() {
-        console.log('here')
         this.getPreviewCode();
       },
       deep:true,
@@ -232,6 +232,7 @@ export default {
       this.geo.pos.y = y;
       this.geo.pos.z = z;
     },
+
     //parameter block
     addItem(){
       if((this.parameter_type != 'Code Block' && (this.parameter_type == '' || this.parameter_selected == '')) || this.parameter_type =='') return
@@ -268,6 +269,17 @@ export default {
           }
       }
     },
+
+    // 取得 parameter 順序
+    updateOrder(){
+      this.orderedLayout = [...this.layout].sort((a, b) => {
+        if (a.y === b.y) {
+          return a.x - b.x;
+        }
+        return a.y - b.y;
+      });
+    },
+
     // code block
     uploadCode(idx){
       this.$refs[`${idx}_code_file`][0].click();
@@ -284,15 +296,10 @@ export default {
         reader.readAsText(file);
       }
     },
-    // 取得 layout 順序
-    updateOrder(){
-      this.orderedLayout = [...this.layout].sort((a, b) => {
-        if (a.y === b.y) {
-          return a.x - b.x;
-        }
-        return a.y - b.y;
-      });
+    handleTab(event){
+      if (event.key === 'Tab') event.preventDefault();
     },
+
     // STL 文件處理
     handleUpload(file){
       var file = file.file
@@ -320,7 +327,7 @@ export default {
       return
     },
 
-    // handle output
+    // 搜集參數配置
     collect(){
       this.isSending = true;
       // 重置輸出物件
@@ -392,16 +399,13 @@ export default {
         }
       })
       this.isSending = false;
-      console.log(this.output)
-      this.send(); // 發送請求
+      this.send();
     },
-    send(){
-
-    },
-    // preview code
+    // 獲取預覽程式碼
     getPreviewCode(){
-      axios.get('./test.md')
+      axios.post('/run/code')
       .then(res=>{
+        this.totalCode = res.data;
         const md = markdownit()
         res.data = md.render(res.data)
         this.$bus.$emit('setCode',res.data)
@@ -414,10 +418,21 @@ export default {
         });
       })
     },
-    // code block
-    handleTab(event){
-      if (event.key === 'Tab') event.preventDefault();
-    }
+    // 將程式碼傳至後端進行運算
+    send(){
+      axios.post('/run/module',{
+        data:this.totalCode       // 獲取整體程式碼
+      })
+      .then(res=>{
+        console.log(res.data)
+      }).catch(e=>{
+        console.log(e)
+        this.$notify.error({
+          title: '系統提示',
+          message: '運行代碼失敗！',
+        });
+      })
+    },
   }
 }
 </script>

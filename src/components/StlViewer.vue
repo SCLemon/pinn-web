@@ -74,6 +74,7 @@ export default {
         this.controls.enablePan = true; // 平移
         this.controls.addEventListener('change', this.renderScene);
         this.renderer.render(this.scene, this.camera);
+
     },
     methods:{
         renderScene() {
@@ -162,7 +163,7 @@ export default {
                 this.getCenter(config.center_normalize);
             };
             reader.readAsArrayBuffer(file);
-        }
+        },
     }
 }
 </script>
