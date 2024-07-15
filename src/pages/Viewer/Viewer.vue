@@ -637,6 +637,9 @@ export default {
         color: white;
         z-index: 1001;
     }
+    .back:hover{
+        cursor: pointer;
+    }
     .arrow{
         margin-right: 5px;
     }

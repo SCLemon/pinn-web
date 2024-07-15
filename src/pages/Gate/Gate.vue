@@ -1,22 +1,18 @@
 <template>
-  <div class="main">
+  <div class="main" ref="main">
     <div class="title">Welcome To Use PINNs Analyzer <div class="out" @click="logout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out</div></div>
     <div class="blocks">
       <div class="blk1 block" @click="go('/main')">
         <div class="img img1"></div>
-        <div class="text">新增文件</div>
-      </div>
-      <div class="blk2 block">
-        <div class="img img2"></div>
-        <div class="text">歷史紀錄</div>
+        <div class="text">New Topic</div>
       </div>
       <div class="blk1 block">
-        <div class="img img3"></div>
-        <div class="text">演算結果</div>
+        <div class="img img2"></div>
+        <div class="text">Results</div>
       </div>
-      <div class="blk2 block" @click="go('/viewer')">
+      <div class="blk1 block" @click="go('/viewer')">
         <div class="img img4"></div>
-        <div class="text">視覺分析</div>
+        <div class="text">Analyzer</div>
       </div>
     </div>
   </div>
@@ -24,9 +20,21 @@
 
 <script>
 import jsCookie from 'js-cookie';
-
+import NET from 'vanta/dist/vanta.net.min'
 export default {
     name:'Gate',
+    mounted(){
+      this.vantaEffect = NET({
+          el: this.$refs.main,
+          mouseControls: true,
+          touchControls: true,
+          gyroControls: false,
+          minHeight: 200.00,
+          minWidth: 200.00,
+          scale: 1.00,
+          scaleMobile: 1.00
+      })
+    },
     methods:{
       go(path){
         this.$router.replace(path).catch(()=>{})
@@ -45,6 +53,11 @@ export default {
           });
         }).catch(() => {});
       },
+    },
+    beforeDestroy(){
+      if (this.vantaEffect) {
+        this.vantaEffect.destroy()
+      }
     }
 }
 </script>
@@ -52,7 +65,7 @@ export default {
 <style scoped>
   .main{
     width: 100%;
-    height: 70vh;
+    height: 100vh;
     margin: auto;
     padding: 20px;
     display: grid;
@@ -66,13 +79,18 @@ export default {
     line-height: 30px;
     font-size: 32px;
     position: relative;
+    text-shadow: -5.5px -5.5px 5px rgba(#fff, 0.3), 6.5px 6.5px 1px #ff0054;
+    color: transparent;
+    -webkit-text-stroke-width: 2px;
+    -webkit-text-stroke-color:white;
+    font-family: 'Titan One', cursive;
   }
   .out{
     position: absolute;
     height: 30px;
     line-height: 30px;
     top:0;
-    right: 60px;
+    right: 70px;
     font-size: 18px;
   }
   .out:hover{
@@ -94,14 +112,11 @@ export default {
     align-items: center;
     border-radius: 10px;
   }
-  .block{
+  .block:hover{
     cursor: pointer;
   }
   .blk1{
-    background: #fcf4e8;
-  }
-  .blk2{
-    background: #fffaf4;
+    background:  linear-gradient(rgba(255,255,255,0.1),rgba(255,255,255,0.6))
   }
   .img{
     width: 60%;
@@ -117,9 +132,6 @@ export default {
   .img2{
     background-image: url('/public/img/history.png');
   }
-  .img3{
-    background-image: url('/public/img/folder.png');
-  }
   .img4{
     background-image: url('/public/img/viewer.png');
   }
@@ -129,6 +141,10 @@ export default {
     line-height: 40px;
     text-align: center;
     font-size: 22px;
-    color:rgba(150,150,150);
+    text-shadow: -5.5px -5.5px 5px rgba(#fff, 0.3), 6.5px 6.5px 1px #ff0054;
+    color: transparent;
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color:white;
+    font-family: 'Titan One', cursive;
   }
 </style>
