@@ -59,7 +59,6 @@ export default {
             let renderer;
             let scalarBarActor;
             let vm =this;
-
             global.pipeline = {};
 
             // Process arguments from URL
