@@ -14,7 +14,7 @@
         <div class="img img3"></div>
         <div class="text">演算結果</div>
       </div>
-      <div class="blk2 block">
+      <div class="blk2 block" @click="go('/viewer')">
         <div class="img img4"></div>
         <div class="text">視覺分析</div>
       </div>
