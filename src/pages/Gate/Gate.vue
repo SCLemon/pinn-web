@@ -1,6 +1,6 @@
 <template>
   <div class="main">
-    <div class="title">Welcome To Use PINNs Viewer</div>
+    <div class="title">Welcome To Use PINNs Viewer <div class="out" @click="logout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out</div></div>
     <div class="blocks">
       <div class="blk1 block" @click="go('/main')">
         <div class="img img1"></div>
@@ -28,6 +28,18 @@ export default {
     methods:{
       go(path){
         this.$router.replace(path).catch(()=>{})
+      },
+      logout(){
+        this.$confirm('確認登出?', '提示', {
+          confirmButtonText: '確定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          this.$message({
+            type: 'success',
+            message: '登出成功!'
+          });
+        }).catch(() => {});
       }
     }
 }
@@ -49,6 +61,18 @@ export default {
     height: 30px;
     line-height: 30px;
     font-size: 32px;
+    position: relative;
+  }
+  .out{
+    position: absolute;
+    height: 30px;
+    line-height: 30px;
+    top:0;
+    right: 60px;
+    font-size: 18px;
+  }
+  .out:hover{
+    cursor: pointer;
   }
   .blocks{
     width: calc(100% - 40px);
