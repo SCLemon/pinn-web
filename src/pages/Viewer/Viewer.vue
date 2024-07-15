@@ -6,6 +6,8 @@
 </template>
 
 <script>
+/* eslint-disable import/prefer-default-export */
+/* eslint-disable import/no-extraneous-dependencies */
 import '@kitware/vtk.js/favicon';
 
 // Load the rendering pieces we want to use (for both WebGL and WebGPU)
