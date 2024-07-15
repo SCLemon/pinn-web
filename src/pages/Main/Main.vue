@@ -7,6 +7,7 @@
       </el-radio-group>
     </span>
     <div class="config" ref="config">
+      <div class="top" @click="back()"><i class="fa-solid fa-arrow-left arrow"></i>back</div>
       <div class="geometry">
         <div class="title">Geometry</div>
         <div class="dimension">
@@ -109,9 +110,9 @@
 
 <script>
 import VueGridLayout from 'vue-grid-layout';
-import structure from '../assets/layoutConig.json'
-import StlViewer from './StlViewer.vue'
-import CodeViewer from './CodeViewer.vue'
+import structure from '../../assets/layoutConfig.json'
+import StlViewer from './components/StlViewer.vue'
+import CodeViewer from './components/CodeViewer.vue'
 import markdownit from 'markdown-it'
 import { nanoid } from 'nanoid'
 import 'highlight.js/styles/atom-one-dark.css';
@@ -202,6 +203,9 @@ export default {
     }
   },
   methods:{
+    back(){
+      this.$router.replace('/gate').catch(()=>{});
+    },
     // geometry block
     tips(type,msg) {
       const h = this.$createElement;
@@ -403,7 +407,21 @@ export default {
     },
     // 獲取預覽程式碼
     getPreviewCode(){
-      axios.post('/run/code')
+      // axios.post('/run/code')
+      // .then(res=>{
+      //   this.totalCode = res.data;
+      //   const md = markdownit()
+      //   res.data = md.render(res.data)
+      //   this.$bus.$emit('setCode',res.data)
+      // })
+      // .catch(e=>{
+      //   console.log(e)
+      //   this.$notify.error({
+      //     title: '系統提示',
+      //     message: '預覽代碼生成失敗！',
+      //   });
+      // })
+      axios.get('/test.md')
       .then(res=>{
         this.totalCode = res.data;
         const md = markdownit()
@@ -444,15 +462,29 @@ export default {
   }
   /* 左列樣式 */
   .config{
-    width: 27.5%;
+    width: 410px;
     height: 100vh;
     box-shadow: 2px 0 10px gray;
     overflow-y: scroll;
     padding-left: 10px;
     padding-right: 10px;
   }
+  .top{
+    width: 25%;
+    height: 40px;
+    border-bottom: 1px solid rgba(210,210,210);
+    line-height: 40px;
+    font-size: 18px;
+  }
+  .top{
+    cursor: pointer;
+  }
+  .arrow{
+    margin-right: 5px;
+    padding-left: 10px;
+  }
   .content{
-    width: 72.5%;
+    width: calc(100% - 410px);
     height: 100vh;
   }
   /* geometry */
