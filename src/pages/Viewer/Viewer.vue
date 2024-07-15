@@ -1,6 +1,7 @@
 <template>
   <div>
-    <div ref='vtkContainerRef'></div>
+    <div class="back" @click="back()"><i class="fa-solid fa-arrow-left arrow"></i>back</div>
+    <div class="vtk" ref='vtkContainerRef'></div>
   </div>
 </template>
 
@@ -42,9 +43,14 @@ export default {
         this.init();
     },
     methods:{
+        back(){
+            document.getElementsByTagName('body')[0].className = '';
+            var t =document.getElementsByClassName('Pwj1novDcIUldNXJliTp')[0]
+            if(t) t.remove();
+            this.$router.replace('/gate');
+            window.location.reload();
+        },
         init(){
-            // ============================================ Start of index.js ============================================
-
             let autoInit = true;
             let background = [0, 0, 0];
             let fullScreenRenderWindow;
@@ -52,6 +58,7 @@ export default {
             let xrRenderWindowHelper;
             let renderer;
             let scalarBarActor;
+            let vm =this;
 
             global.pipeline = {};
 
@@ -127,10 +134,6 @@ export default {
                     }
                 });
             }
-
-            // ----------------------------------------------------------------------------
-            // DOM containers for UI control
-            // ----------------------------------------------------------------------------
 
             const rootControllerContainer = document.createElement('div');
             rootControllerContainer.setAttribute('class', style.rootController);
@@ -247,7 +250,10 @@ export default {
 
                 const labelSelector = document.createElement('label');
                 labelSelector.setAttribute('class', selectorClass);
-                labelSelector.innerHTML = fileName;
+                labelSelector.innerHTML = `< back`;
+                labelSelector.addEventListener('click',()=>{
+                    vm.back();
+                })
 
                 const immersionSelector = document.createElement('button');
                 immersionSelector.setAttribute('class', selectorClass);
@@ -264,7 +270,6 @@ export default {
                 controlContainer.appendChild(colorBySelector);
                 controlContainer.appendChild(componentSelector);
                 controlContainer.appendChild(opacitySelector);
-
                 if (
                     navigator.xr !== undefined &&
                     xrRenderWindowHelper.getXrSupported() &&
@@ -294,7 +299,6 @@ export default {
                 // --------------------------------------------------------------------
                 // Color handling
                 // --------------------------------------------------------------------
-
                 function applyPreset() {
                     const preset = vtkColorMaps.getPresetByName(presetSelector.value);
                     lookupTable.applyColorMap(preset);
@@ -494,7 +498,6 @@ export default {
                 // Update stats
                 fpsMonitor.update();
             }
-
             // ----------------------------------------------------------------------------
 
             function loadFile(file) {
@@ -576,7 +579,7 @@ export default {
                 }
 
                 const fileContainer = document.createElement('div');
-                fileContainer.innerHTML = `<div class="${style.bigFileDrop}"/><input type="file" multiple accept=".vtp" style="display: none;"/>`;
+                fileContainer.innerHTML = `<div class="${style.bigFileDrop}"/><input id="fileInput" type="file" accept=".vtp" style="display: none;"/>`;
                 myContainer.appendChild(fileContainer);
 
                 const fileInput = fileContainer.querySelector('input');
@@ -596,9 +599,6 @@ export default {
                 fileContainer.addEventListener('click', (e) => fileInput.click());
                 fileContainer.addEventListener('dragover', preventDefaults);
             }
-
-            // Look at URL an see if we should load a file
-            // ?fileURL=https://data.kitware.com/api/v1/item/59cdbb588d777f31ac63de08/download
             if (userParams.url || userParams.fileURL) {
                 const exampleContainer = document.querySelector('.content');
                 const rootBody = document.querySelector('body');
@@ -619,13 +619,25 @@ export default {
                     initLocalFileLoader();
                 }
             }, 100);
-
             // ============================================== End of index.js ==================================================
         }
+    },
+    beforeDestroy(){
+        
     }
 }
 </script>
 
 <style scoped>
-
+    .back{
+        top:10px;
+        left: 20px;
+        position: absolute;
+        width:100px;
+        color: white;
+        z-index: 1001;
+    }
+    .arrow{
+        margin-right: 5px;
+    }
 </style>

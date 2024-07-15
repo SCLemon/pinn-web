@@ -44,7 +44,7 @@ export default {
             message: '登出成功!'
           });
         }).catch(() => {});
-      }
+      },
     }
 }
 </script>
