@@ -116,7 +116,20 @@ export default {
     cursor: pointer;
   }
   .blk1{
-    background:  linear-gradient(rgba(255,255,255,0.1),rgba(255,255,255,0.6))
+    background:  linear-gradient(rgba(255,255,255,0.05),rgba(255,255,255,0.4));
+    animation: bg 7s ease-in-out infinite;
+    animation-delay: 0.5s;
+  }
+  @keyframes bg {
+    0% {
+        background-color: rgba(255, 255, 255, 0); /* 暗 */
+    }
+    50% {
+        background-color: rgba(255, 255, 255, 0.4); /* 亮 */
+    }
+    100% {
+        background-color: rgba(255, 255, 255, 0); /* 暗 */
+    }
   }
   .img{
     width: 60%;
@@ -133,7 +146,7 @@ export default {
     background-image: url('/public/img/history.png');
   }
   .img4{
-    background-image: url('/public/img/viewer.png');
+    background-image: url('/public/img/analyzer.png');
   }
   .text{
     width: 100%;
