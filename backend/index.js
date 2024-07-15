@@ -11,22 +11,28 @@ app.use((req, res, next) => {
     next();
 });
 
-const router = express.Router();
-
-// 回傳程式碼
-router.post('/run/code',(req, res) => {
-    console.log(req.body.data) // 獲取整體程式碼
-    res.send('success');
+// 初始化資料庫
+const { connectToDatabase, disconnectFromDatabase } = require('./db/db');
+connectToDatabase();
+process.on('SIGINT', function() {
+    disconnectFromDatabase();
+    // 這裡可以進行其他的清理操作，例如關閉伺服器
+    process.exit(0);
 });
 
-// 執行 module
-router.post('/run/module',(req, res) => {
-    console.log(req.body.data) // 獲取配置參數
-    res.send('success');
-});
+// run router
+const runRouter = require('./routes/runRouter');
+app.use(runRouter);
 
+// verify router
+const verifyRouter = require('./routes/verifyRouter');
+app.use(verifyRouter);
 
-app.use(router)
 app.listen(3999,()=>{
     console.log('server is running on port 3999')
 })
+
+// 避免系統中斷
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});

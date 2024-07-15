@@ -9,6 +9,9 @@ module.exports = defineConfig({
       '/run': {
         target: 'http://127.0.0.1:3999',
       },
+      '/verify': {
+        target: 'http://127.0.0.1:3999',
+      },
     }
   },
 })

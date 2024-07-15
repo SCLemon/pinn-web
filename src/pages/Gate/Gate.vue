@@ -1,6 +1,6 @@
 <template>
   <div class="main">
-    <div class="title">Welcome To Use PINNs Viewer <div class="out" @click="logout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out</div></div>
+    <div class="title">Welcome To Use PINNs Analyzer <div class="out" @click="logout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out</div></div>
     <div class="blocks">
       <div class="blk1 block" @click="go('/main')">
         <div class="img img1"></div>
@@ -23,6 +23,8 @@
 </template>
 
 <script>
+import jsCookie from 'js-cookie';
+
 export default {
     name:'Gate',
     methods:{
@@ -35,6 +37,8 @@ export default {
           cancelButtonText: '取消',
           type: 'warning'
         }).then(() => {
+          jsCookie.set('token','');
+          this.$router.replace('/').catch(()=>{});
           this.$message({
             type: 'success',
             message: '登出成功!'

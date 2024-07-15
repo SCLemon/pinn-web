@@ -462,7 +462,7 @@ export default {
   }
   /* 左列樣式 */
   .config{
-    width: 410px;
+    width: 390px;
     height: 100vh;
     box-shadow: 2px 0 10px gray;
     overflow-y: scroll;
@@ -484,7 +484,7 @@ export default {
     padding-left: 10px;
   }
   .content{
-    width: calc(100% - 410px);
+    width: calc(100% - 390px);
     height: 100vh;
   }
   /* geometry */
