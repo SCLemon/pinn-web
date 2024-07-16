@@ -6,7 +6,6 @@ import Main from '../pages/Main/Main.vue'
 import List from '../pages/List/List.vue'
 import Gate from '../pages/Gate/Gate.vue'
 import Login from '../pages/Login/Login.vue'
-import Viewer from '../pages/Viewer/Viewer.vue'
 Vue.use(VueRouter)
 const router = new VueRouter({
     routes:[
@@ -23,8 +22,10 @@ const router = new VueRouter({
             component:List
         },
         {
-            path:'/viewer',
-            component:Viewer
+            path: '/viewer',
+            beforeEnter() {
+              window.open('/vtk_viewer/index.html', '_blank');
+            },
         },
         {
             path:'/login',
