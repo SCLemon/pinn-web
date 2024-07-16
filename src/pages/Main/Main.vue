@@ -19,7 +19,7 @@
         <div class="geo_subTitle">Mesh</div>
         <div class="mesh">
           <el-upload
-            class="upload" action="" accept=".stl" :http-request="handleUpload" :on-remove="handleRemove" :on-preview="handlePreview"
+            class="upload" action="" accept=".stl,.vtp" :http-request="handleUpload" :on-remove="handleRemove" :on-preview="handlePreview"
             multiple :file-list="geo.fileList"  drag>
             <i class="el-icon-upload"></i>
             <div class="el-upload__text">將文件拖到此處，或<em>點擊上傳</em></div>
@@ -309,14 +309,12 @@ export default {
     handleUpload(file){
       var file = file.file
       this.geo.fileList.push(file);
-
       this.geo.fileDetail.push({ // 新增至文件輸出列表
         uid:file.uid,
         file:file,
         name:'',
         airtight:"True",
       })
-
       this.$bus.$emit('loadStlFile',file,{
         wireframe:this.geo.wireframe,
         center_normalize:this.geo.pos_normalize,

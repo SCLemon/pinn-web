@@ -44,17 +44,20 @@ export default {
         backgroundColor: 0xffffff
       })
       this.getList();
+      this.timer = setInterval(() => {
+        this.getList();
+      }, 5000);
     },
     data(){
         return {
             tableData: [{}],
             search: '',
             isLoading:true,
+            timer:0,
         }
     },
     methods:{
         getList(){
-            this.isLoading = true;
             axios.get('/run/findAll',{
                 headers:{
                     'user-token':jsCookie.get('token')
@@ -79,14 +82,14 @@ export default {
             })
             .then(res=>{
                 const blob = new Blob([res.data], { type: filename.split('.')[1] });
-                const url = window.URL.createObjectURL(blob); // 創建下載 URL
-                const a = document.createElement('a'); // 創建一個隱藏的連結元素
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = url;
-                a.download = filename; // 使用獲取的檔案名
+                a.download = filename;
                 document.body.appendChild(a);
-                a.click(); // 觸發點擊事件以開始下載
-                window.URL.revokeObjectURL(url); // 釋放資源
+                a.click();
+                window.URL.revokeObjectURL(url);
             })
             .catch(e=>console.log(e))
         },
@@ -96,12 +99,13 @@ export default {
                 this.getList();
             })
             .catch(e=>console.log(e))
-        }
+        },
     },
     beforeDestroy(){
       if (this.vantaEffect) {
         this.vantaEffect.destroy()
       }
+      clearInterval(this.timer)
     },
     updated(){
         this.$refs.table.style='background:transparent;'
