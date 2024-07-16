@@ -32,8 +32,7 @@ router.post('/run/upload',upload.single('file'),(req, res) => {
         const readableStream = new Readable();
         readableStream.push(file.buffer);
         readableStream.push(null); // 結束流
-
-        const uploadStream = bucket.openUploadStream(`${parseInt(Math.random()*10000)}-data.stl`,{
+        const uploadStream = bucket.openUploadStream(`${format(new Date(),'MMdd')}_${file.originalname}`,{
             metadata: {token: token, date:format(new Date(),'yyyy-MM-dd'),status:'Ready'}
         });
         readableStream.pipe(uploadStream);

@@ -32,7 +32,7 @@ const router = new VueRouter({
         },
         {
             path:'/',
-            redirect:'/main'
+            redirect:'/gate'
         },
     ]
 })
