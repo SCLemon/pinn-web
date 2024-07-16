@@ -64,7 +64,7 @@ export default {
                 }
             })
             .then(res=>{
-                this.tableData = res.data;
+                this.tableData = res.data.reverse();
             })
             .catch(e=>{
                 console.log(e)
