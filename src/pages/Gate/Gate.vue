@@ -6,7 +6,7 @@
         <div class="img img1"></div>
         <div class="text">New Topic</div>
       </div>
-      <div class="blk1 block">
+      <div class="blk1 block" @click="go('/list')">
         <div class="img img2"></div>
         <div class="text">Results</div>
       </div>
@@ -46,7 +46,7 @@ export default {
           type: 'warning'
         }).then(() => {
           jsCookie.set('token','');
-          this.$router.replace('/').catch(()=>{});
+          this.$router.replace('/login').catch(()=>{});
           this.$message({
             type: 'success',
             message: '登出成功!'

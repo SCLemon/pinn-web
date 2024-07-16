@@ -22,4 +22,19 @@ export default {
 #app {
   overflow: hidden;
 }
+
+/* results start */
+.el-table__empty-text{
+  width: 100% !important;
+}
+.el-table__row{
+  background: transparent !important;
+}
+.el-table tr{
+  background-color:transparent !important;
+}
+.el-table th.el-table__cell{
+  background-color:transparent !important;
+}
+/* results end */
 </style>
