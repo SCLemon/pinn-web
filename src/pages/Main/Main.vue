@@ -117,6 +117,7 @@ import markdownit from 'markdown-it'
 import { nanoid } from 'nanoid'
 import 'highlight.js/styles/atom-one-dark.css';
 import axios from 'axios';
+import jsCookie from 'js-cookie';
 export default {
   name:'Main',
   components:{
@@ -354,7 +355,8 @@ export default {
           type: "stl",
           filename: obj.file.name,
           arguments: ["airtight"],
-          airtight: obj.airtight
+          airtight: obj.airtight,
+          file:obj.file
         })
       })
       
@@ -403,7 +405,7 @@ export default {
         }
       })
       this.isSending = false;
-      this.send();
+      this.sendTest(); // 記得改
     },
     // 獲取預覽程式碼
     getPreviewCode(){
@@ -451,6 +453,27 @@ export default {
         });
       })
     },
+    // 測試用(之後會在後端應用 --> 儲存檔案用)
+    sendTest(){
+      const formData = new FormData();
+      formData.append('file', this.output.mesh[0].file); 
+      axios.post('/run/upload',formData,{
+          headers:{
+            'Content-Type': 'multipart/form-data',
+            'user-token':jsCookie.get('token')
+          }
+        })
+        .then(res=>{
+          this.$router.replace('/list');
+        })
+        .catch(e=>{
+          console.log(e)
+          this.$notify.error({
+            title: '系統提示',
+            message: '運行代碼失敗！',
+          });
+        })
+    }
   }
 }
 </script>

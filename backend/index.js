@@ -1,15 +1,8 @@
 const express = require('express');
 const app = express();
-const util = require('util');
-const exec = util.promisify(require('child_process').exec);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-app.use((req, res, next) => {
-    console.log(`訪問路徑: ${req.path}`);
-    next();
-});
 
 // 初始化資料庫
 const { connectToDatabase, disconnectFromDatabase } = require('./db/db');

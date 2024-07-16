@@ -4,18 +4,18 @@
         <div class="main">
             <el-table empty-text="暫無數據" :data="tableData.filter(data => !search || data.name.toLowerCase().includes(search.toLowerCase()))" style="width: 100%" :height="550" class="table" ref="table">
                 <el-table-column label="建立時間" prop="date"></el-table-column>
-                <el-table-column label="專案名稱" prop="name"></el-table-column>
+                <el-table-column label="專案名稱" prop="filename"></el-table-column>
                 <el-table-column label="狀態" prop="status"></el-table-column>
                 <template slot="empty" slot-scope="scope">
-                    <el-skeleton class="skeleton" :loading="true" animated></el-skeleton>
+                    <el-skeleton v-if="isLoading" class="skeleton" :loading="isLoading" animated></el-skeleton>
                 </template>
                 <el-table-column align="right"> 
                     <template slot="header" slot-scope="scope">
                         <el-input v-model="search" size="mini" placeholder="輸入關鍵字搜索"/>
                     </template>
                     <template slot-scope="scope">
-                        <el-button size="mini" @click="scope.row.status=='Ready'?handleDownload(scope.row.id):''" :disabled="scope.row.status!='Ready'">下載</el-button>
-                        <el-button size="mini" type="danger" @click="scope.row.status=='Ready'?handleDelete(scope.row.id):''" :disabled="scope.row.status!='Ready'">刪除</el-button>
+                        <el-button size="mini" @click="scope.row.status =='Ready'?handleDownload(scope.row.id,scope.row.filename):''" :disabled="scope.row.status !='Ready'">下載</el-button>
+                        <el-button size="mini" type="danger" @click="scope.row.status =='Ready'?handleDelete(scope.row.id):''" :disabled="scope.row.status !='Ready'">刪除</el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -25,6 +25,8 @@
 
 <script>
 import DOT from 'vanta/dist/vanta.dots.min'
+import axios from 'axios'
+import jsCookie from 'js-cookie';
 export default {
     name:'List',
     mounted(){
@@ -41,37 +43,59 @@ export default {
         color2: 0xe3e3,
         backgroundColor: 0xffffff
       })
+      this.getList();
     },
     data(){
         return {
-            tableData: [{
-                id:'001',
-                date: '2016-05-02',
-                name: 'VTP.file',
-                status:'Ready'
-            },{
-                id:'001',
-                date: '2016-05-02',
-                name: 'VTP.file',
-                status:'Running'
-            },{
-                id:'001',
-                date: '2016-05-02',
-                name: 'VTP.file',
-                status:'Queuing'
-            }],
-            search: ''
+            tableData: [{}],
+            search: '',
+            isLoading:true,
         }
     },
     methods:{
+        getList(){
+            this.isLoading = true;
+            axios.get('/run/findAll',{
+                headers:{
+                    'user-token':jsCookie.get('token')
+                }
+            })
+            .then(res=>{
+                this.tableData = res.data;
+            })
+            .catch(e=>{
+                console.log(e)
+            })
+            .finally(()=>{
+                this.isLoading = false;
+            })
+        },
         back(){
             this.$router.replace('/gate').catch(()=>{});
         },
-        handleDownload(idx){
-            console.log(idx)
+        handleDownload(idx,filename){
+            axios.get(`/run/download/${idx}`,{
+                responseType: 'blob',
+            })
+            .then(res=>{
+                const blob = new Blob([res.data], { type: filename.split('.')[1] });
+                const url = window.URL.createObjectURL(blob); // 創建下載 URL
+                const a = document.createElement('a'); // 創建一個隱藏的連結元素
+                a.style.display = 'none';
+                a.href = url;
+                a.download = filename; // 使用獲取的檔案名
+                document.body.appendChild(a);
+                a.click(); // 觸發點擊事件以開始下載
+                window.URL.revokeObjectURL(url); // 釋放資源
+            })
+            .catch(e=>console.log(e))
         },
         handleDelete(idx){
-
+            axios.delete(`/run/delete/${idx}`)
+            .then(res=>{
+                this.getList();
+            })
+            .catch(e=>console.log(e))
         }
     },
     beforeDestroy(){
@@ -121,5 +145,6 @@ export default {
     }
     .skeleton{
         text-align: left;
+        
     }
 </style>

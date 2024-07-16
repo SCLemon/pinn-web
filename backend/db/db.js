@@ -20,5 +20,7 @@ function disconnectFromDatabase() {
     console.log('MongoDB disconnected');
   });
 }
-
-module.exports = { connectToDatabase, disconnectFromDatabase };
+function getDb(){ // 返回資料庫實例
+  return mongoose.connection.db;
+}
+module.exports = { connectToDatabase, disconnectFromDatabase,getDb};

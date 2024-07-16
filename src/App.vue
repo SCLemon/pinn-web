@@ -36,5 +36,8 @@ export default {
 .el-table th.el-table__cell{
   background-color:transparent !important;
 }
+.el-table__empty-block{
+  align-items: start !important;
+}
 /* results end */
 </style>

@@ -37,13 +37,12 @@ const router = new VueRouter({
     ]
 })
 router.beforeEach((to, from, next) => {
-    // const token = jsCookie.get('token');
-    // if (to.path !== '/login' && !token) {
-    //   next('/login')
-    // } else {
-    //   next()
-    // }
-    next();
+    const token = jsCookie.get('token');
+    if (to.path !== '/login' && !token) {
+      next('/login')
+    } else {
+      next()
+    }
 });
   
 export default router
