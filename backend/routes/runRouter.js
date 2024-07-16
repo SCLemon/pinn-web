@@ -21,7 +21,7 @@ router.post('/run/module',(req, res) => {
 });
 
 
-// 上傳檔案
+// 上傳檔案 --> 理當在後端跑完 python 後自己呼叫此方法
 const upload = multer();
 router.post('/run/upload',upload.single('file'),(req, res) => {
     var file = req.file;
@@ -40,7 +40,10 @@ router.post('/run/upload',upload.single('file'),(req, res) => {
             res.status(200).send({message: '資料儲存成功'});
         });
         setTimeout(() => { // 模擬改變狀態
-            updateFileStatus(uploadStream.id.toHexString())
+            updateFileStatus(uploadStream.id.toHexString(),'Running')
+            setTimeout(()=>{
+                updateFileStatus(uploadStream.id.toHexString(),'Ready');
+            },5000)
         }, 5000);
     } catch (err) {
         console.error(err);
@@ -48,7 +51,7 @@ router.post('/run/upload',upload.single('file'),(req, res) => {
     }
 });
 
-// 下載檔案
+// 下載檔案 --> 無需更改
 router.get('/run/download/:fileId', async (req, res) => {
     const fileId = req.params.fileId;
     const db = getDb();
@@ -71,7 +74,7 @@ router.get('/run/download/:fileId', async (req, res) => {
     }
 });
 
-// 查看檔案
+// 查看檔案 --> 無需更改
 router.get('/run/findAll', async (req, res) => {
     var token = req.headers['user-token'];
     const db = getDb();
@@ -91,7 +94,7 @@ router.get('/run/findAll', async (req, res) => {
     }
 });
 
-// 刪除檔案
+// 刪除檔案 --> 無需更改
 router.delete('/run/delete/:fileId', async (req, res) => {
     const fileId = req.params.fileId;
     const db = getDb();
@@ -105,9 +108,9 @@ router.delete('/run/delete/:fileId', async (req, res) => {
 });
 
 
-// 修改狀態
-async function updateFileStatus(idx){
-    const newMetadata = 'Ready';
+// 修改狀態 Running or Ready --> 無需更改
+async function updateFileStatus(idx,status){
+    const newMetadata = status==undefined?'Ready':status;
     const db = getDb();
     try {
         const filesCollection = db.collection('fs.files');

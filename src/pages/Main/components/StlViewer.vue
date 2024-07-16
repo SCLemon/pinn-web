@@ -141,6 +141,7 @@ export default {
         },
         // 添加物件
         loadFile(file,config){
+            if(!file.name.includes('.stl')) return;
             const reader = new FileReader();
             reader.onload = (e) => {
                 const contents = e.target.result;

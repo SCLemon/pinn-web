@@ -75,7 +75,7 @@ export default {
                 })
                 .then(res=>{
                     if(typeof res.data =='object'){
-                        this.$message({type: 'success',message: '登入成功！'});
+                        this.$message({type: 'success',message: res.data.message});
                         jsCookie.set('token',res.data.token);
                         this.$router.replace('/gate')
                     }

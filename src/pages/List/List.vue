@@ -50,7 +50,7 @@ export default {
     },
     data(){
         return {
-            tableData: [{}],
+            tableData: [],
             search: '',
             isLoading:true,
             timer:0,

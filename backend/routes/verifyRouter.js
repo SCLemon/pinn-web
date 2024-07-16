@@ -20,7 +20,11 @@ router.post('/verify/register',(req, res) => {
         .then((data, err) => {
           if (err) res.status(200).send('帳號創建失敗')
           else {
-            res.status(200).send('帳號創建成功')
+            res.status(200).send({
+              status:'success',
+              message:'帳號創建成功',
+              token:data.token
+            })
           }
         })
       }
@@ -29,6 +33,7 @@ router.post('/verify/register',(req, res) => {
         if(password == data.password){
           res.status(200).send({
             status:'success',
+            message:'登入成功',
             token:data.token
           })
         }
