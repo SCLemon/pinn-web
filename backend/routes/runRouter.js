@@ -26,7 +26,6 @@ const upload = multer();
 router.post('/run/upload',upload.single('file'),(req, res) => {
     var file = req.file;
     var filename = req.body.filename;
-    console.log(req)
     var token = req.headers['user-token'];
     const db = getDb();
     const bucket = new GridFSBucket(db);
