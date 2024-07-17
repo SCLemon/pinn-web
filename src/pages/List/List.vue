@@ -6,6 +6,7 @@
                 <el-table-column label="建立時間" prop="date"></el-table-column>
                 <el-table-column label="專案名稱" prop="filename"></el-table-column>
                 <el-table-column label="狀態" prop="status"></el-table-column>
+                <el-table-column label="輸出" prop="output"></el-table-column>
                 <template slot="empty" slot-scope="scope">
                     <el-skeleton v-if="isLoading" class="skeleton" :loading="isLoading" animated></el-skeleton>
                 </template>
@@ -14,7 +15,7 @@
                         <el-input v-model="search" size="mini" placeholder="輸入關鍵字搜索"/>
                     </template>
                     <template slot-scope="scope">
-                        <el-button size="mini" @click="scope.row.status =='Ready'?handleDownload(scope.row.id,scope.row.filename):''" :disabled="scope.row.status !='Ready'">下載</el-button>
+                        <el-button size="mini" @click="scope.row.status =='Ready'?handleDownload(scope.row.id,scope.row.output):''" :disabled="scope.row.status !='Ready'">下載</el-button>
                         <el-button size="mini" type="danger" @click="scope.row.status =='Ready'?handleDelete(scope.row.id):''" :disabled="scope.row.status !='Ready'">刪除</el-button>
                     </template>
                 </el-table-column>
@@ -76,17 +77,17 @@ export default {
         back(){
             this.$router.replace('/gate').catch(()=>{});
         },
-        handleDownload(idx,filename){
+        handleDownload(idx,output){
             axios.get(`/run/download/${idx}`,{
                 responseType: 'blob',
             })
             .then(res=>{
-                const blob = new Blob([res.data], { type: filename.split('.')[1] });
+                const blob = new Blob([res.data], { type: output.split('.')[1] });
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = url;
-                a.download = filename;
+                a.download = output;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
