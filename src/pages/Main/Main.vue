@@ -354,7 +354,6 @@ export default {
           filename: obj.file.name,
           arguments: ["airtight"],
           airtight: obj.airtight,
-          file:obj.file
         })
       })
       
@@ -454,7 +453,8 @@ export default {
     // 測試用(之後會在後端應用 --> 儲存檔案用)
     sendTest(){
       const formData = new FormData();
-      formData.append('file', this.output.mesh[0].file); 
+      formData.append('file', this.geo.fileList[0]); 
+      formData.append('filename',this.geo.fileList[0].name);
       axios.post('/run/upload',formData,{
           headers:{
             'Content-Type': 'multipart/form-data',

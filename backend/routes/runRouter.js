@@ -25,6 +25,8 @@ router.post('/run/module',(req, res) => {
 const upload = multer();
 router.post('/run/upload',upload.single('file'),(req, res) => {
     var file = req.file;
+    var filename = req.body.filename;
+    console.log(req)
     var token = req.headers['user-token'];
     const db = getDb();
     const bucket = new GridFSBucket(db);
@@ -32,7 +34,7 @@ router.post('/run/upload',upload.single('file'),(req, res) => {
         const readableStream = new Readable();
         readableStream.push(file.buffer);
         readableStream.push(null); // 結束流
-        const uploadStream = bucket.openUploadStream(`${format(new Date(),'MMdd')}_${file.originalname}`,{
+        const uploadStream = bucket.openUploadStream(`${format(new Date(), 'MMdd')}_${filename}`,{
             metadata: {token: token, date:format(new Date(),'yyyy-MM-dd'),status:'Queuing'}
         });
         readableStream.pipe(uploadStream);
