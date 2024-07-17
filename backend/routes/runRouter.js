@@ -32,7 +32,7 @@ router.post('/run/upload',upload.single('file'),(req, res) => {
         // 空殼資料
         const readableStream = new Readable();
         readableStream.push(null); // 結束流
-        const uploadStream = bucket.openUploadStream(`${format(new Date(), 'MMdd')}_project`,{
+        const uploadStream = bucket.openUploadStream(`${format(new Date(), 'hhmm')}_project`,{
             metadata: {token: token, date:format(new Date(),'yyyy-MM-dd'),status:'Queuing',output:''}
         });
         readableStream.pipe(uploadStream);
@@ -81,7 +81,7 @@ async function replaceFile(file,options) {
         readableStream.push(null); 
         options.metadata.output = options.filename;
         options.metadata.status = 'Ready';
-        const upload = bucket.openUploadStream(`${format(new Date(), 'MMdd')}_project`,{
+        const upload = bucket.openUploadStream(`${format(new Date(), 'hhmm')}_project`,{
             metadata: options.metadata
         });
         readableStream.pipe(upload);

@@ -6,7 +6,7 @@
                 <el-table-column label="建立時間" prop="date"></el-table-column>
                 <el-table-column label="專案名稱" prop="filename"></el-table-column>
                 <el-table-column label="狀態" prop="status"></el-table-column>
-                <el-table-column label="輸出" prop="output"></el-table-column>
+                <el-table-column label="輸出檔案" prop="output"></el-table-column>
                 <template slot="empty" slot-scope="scope">
                     <el-skeleton v-if="isLoading" class="skeleton" :loading="isLoading" animated></el-skeleton>
                 </template>
@@ -47,7 +47,7 @@ export default {
       this.getList();
       this.timer = setInterval(() => {
         this.getList();
-      }, 5000);
+      }, 3000);
     },
     data(){
         return {
