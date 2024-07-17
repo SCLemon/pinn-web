@@ -2,7 +2,7 @@
     <div class="body" ref="body">
         <div class="title"><div class="top" @click="back()"><i class="fa-solid fa-arrow-left arrow"></i>back</div>專案列表</div>
         <div class="main">
-            <el-table empty-text="暫無數據" :data="tableData.filter(data => !search || data.name.toLowerCase().includes(search.toLowerCase()))" style="width: 100%" :height="550" class="table" ref="table">
+            <el-table empty-text="暫無數據" :data="tableData.filter(data => !search || data.filename.toLowerCase().includes(search.toLowerCase()))" style="width: 100%" :height="550" class="table" ref="table">
                 <el-table-column label="建立時間" prop="date"></el-table-column>
                 <el-table-column label="專案名稱" prop="filename"></el-table-column>
                 <el-table-column label="狀態" prop="status"></el-table-column>
