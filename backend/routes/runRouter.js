@@ -35,7 +35,7 @@ router.post('/run/code',(req, res) => {
         });
     }
     catch(e){
-        res.send(stdout);
+        res.send('');
     }
 });
 
