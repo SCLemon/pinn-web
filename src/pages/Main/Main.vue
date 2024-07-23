@@ -120,6 +120,14 @@ export default {
   },
   mounted(){
     this.$bus.$on('setCenter',this.setCenter)
+    document.addEventListener('click', (event)=>{
+      if (event.target.tagName === 'INPUT') {
+        this.isDraggable = false
+      }
+      if (event.target.tagName === 'DIV') {
+        this.isDraggable = true;
+      }
+    });
   },
   data(){
     return {
