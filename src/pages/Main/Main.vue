@@ -295,6 +295,7 @@ export default {
         reader.onload = (event) => {
             const content = event.target.result;
             this.layout_values[`${idx}_${type}`] = content;
+            this.collect();
         };
         reader.readAsText(file);
       }
@@ -396,7 +397,8 @@ export default {
           this.output.blocks.push(structure);
         }
         else{ // code block
-          var code = this.layout_values[`${obj.i}_${obj.type}`].split('\n');;
+          if(!this.layout_values[`${obj.i}_${obj.type}`]) return;
+          var code = this.layout_values[`${obj.i}_${obj.type}`].split('\n');
           this.output.blocks.push({
             uuid:obj.i,
             type:'manual',
@@ -413,7 +415,6 @@ export default {
       })
       .then(res=>{
         if(res.data == '```\n'+'\n```') return
-        console.log(res.data)
         this.totalCode = res.data;
         const md = markdownit()
         res.data = md.render(res.data)
