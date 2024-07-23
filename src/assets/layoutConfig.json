@@ -38,5 +38,11 @@
             "function":"IntegralBoundaryConstraint",
             "property":["name","nodes","geometry","outvar","batch_size","bounds","criteria","lambda_weighting"]
         }
+    },
+    "Nodes":{
+        "Nodes":{
+            "function":"Nodes",
+            "property":["name",{"type":"equations","options":["['ns','normal_dot_vel]'"]},{"type":"architectures","options":["['flow_net','flow_net1']"]}]
+        }
     }
 }

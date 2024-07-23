@@ -149,7 +149,7 @@ export default {
       layout:[],
       orderedLayout:[],
       layout_values:{},
-      parameter:['Equations','Neural Network Architecture','Constraints'],
+      parameter:['Equations','Neural Network Architecture','Constraints','Nodes'],
       parameter_type:'',
       parameter_selected:'',
       // output
@@ -164,7 +164,7 @@ export default {
     orderedLayout:{
       handler() {
         if(this.init){ // 阻止第一次觸發
-          this.getPreviewCode();
+          this.collect();
         }
         this.init++;
       },
@@ -172,7 +172,7 @@ export default {
     },
     layout_values:{
       handler() {
-        this.getPreviewCode();
+        this.collect();
       },
       deep:true,
     }
@@ -190,6 +190,10 @@ export default {
     cs_structure(){
       return structure.Constraint
     },
+    // Nodes block
+    nd_structure(){
+      return structure.Nodes
+    },
     options(){
       switch (this.parameter_type) {
         case 'Equations':
@@ -198,6 +202,8 @@ export default {
           return this.nn_structure
         case 'Constraints':
           return this.cs_structure
+        case 'Nodes':
+          return this.nd_structure
         default:
           return [];
       }
@@ -332,25 +338,27 @@ export default {
 
     // 搜集參數配置
     collect(){
-      this.isSending = true;
       // 重置輸出物件
       this.output = {
-        dimensions: 3,
-        scale: 1,
-        center: [0, 0, 0],
-        mesh: [],
+        normalize:{
+          do:true,
+          scale: 1,
+          center: [0, 0, 0],
+        },
+        meshes: [],
         blocks:[]
       }
-      this.output.dimensions = this.geo.dimension;
-      this.output.scale = this.geo.factor;
-      this.output.center = [this.geo.pos.x,this.geo.pos.y,this.geo.pos.z];
+      this.output.normalize.do = this.geo.pos_normalize;
+      this.output.normalize.scale = this.geo.factor;
+      this.output.normalize.center = [this.geo.pos.x,this.geo.pos.y,this.geo.pos.z];
 
       // mesh stl
       this.geo.fileDetail.forEach(obj=>{
-        this.output.mesh.push({
+        this.output.meshes.push({
           uuid: obj.file.uid,
+          type: "mesh",
           name: obj.name,
-          type: "stl",
+          filetype:'stl',
           filename: obj.file.name,
           arguments: ["airtight"],
           airtight: obj.airtight,
@@ -363,8 +371,8 @@ export default {
         if(obj.type != 'Code Block'){
           var structure = {
             uuid:'',
-            name:'',
             type:'',
+            name:'',
             function:'',
             arguments:[],
           };
@@ -376,13 +384,16 @@ export default {
           })
           switch(obj.type){
             case 'Equations':
-              structure.type = "pde"
+              structure.type = "equation"
               break;
             case 'Neural Network Architecture':
-              structure.type = "arch"
+              structure.type = "architecture"
               break;
             case 'Constraints':
               structure.type = 'constraint'
+              break;
+            case 'Nodes':
+              structure.type = 'nodes'
               break;
           }
           // 汲取資料
@@ -396,22 +407,24 @@ export default {
           var code = this.layout_values[`${obj.i}_${obj.type}`]
           this.output.blocks.push({
             uuid:obj.i,
-            type:obj.type,
-            code:code
+            type:'manual',
+            codes:code
           })
         }
       })
-      this.isSending = false;
-      this.sendTest(); // 記得改
+      this.getPreviewCode();
     },
     // 獲取預覽程式碼
     getPreviewCode(){
-      // axios.post('/run/code')
+      // axios.post('/run/code',{
+      //   json:JSON.stringify(this.output)
+      // })
       // .then(res=>{
-      //   this.totalCode = res.data;
-      //   const md = markdownit()
-      //   res.data = md.render(res.data)
-      //   this.$bus.$emit('setCode',res.data)
+      //   console.log(res.data)
+      //   // this.totalCode = res.data;
+      //   // const md = markdownit()
+      //   // res.data = md.render(res.data)
+      //   // this.$bus.$emit('setCode',res.data)
       // })
       // .catch(e=>{
       //   console.log(e)
@@ -420,20 +433,6 @@ export default {
       //     message: '預覽代碼生成失敗！',
       //   });
       // })
-      axios.get('/test.md')
-      .then(res=>{
-        this.totalCode = res.data;
-        const md = markdownit()
-        res.data = md.render(res.data)
-        this.$bus.$emit('setCode',res.data)
-      })
-      .catch(e=>{
-        console.log(e)
-        this.$notify.error({
-          title: '系統提示',
-          message: '預覽代碼生成失敗！',
-        });
-      })
     },
     // 將程式碼傳至後端進行運算
     send(){
@@ -452,25 +451,26 @@ export default {
     },
     // 測試用(之後會在後端應用 --> 儲存檔案用)
     sendTest(){
-      const formData = new FormData();
-      formData.append('file', this.geo.fileList[0]); 
-      formData.append('filename',this.geo.fileList[0].name);
-      axios.post('/run/upload',formData,{
-          headers:{
-            'Content-Type': 'multipart/form-data',
-            'user-token':jsCookie.get('token')
-          }
-        })
-        .then(res=>{
-          this.$router.replace('/list');
-        })
-        .catch(e=>{
-          console.log(e)
-          this.$notify.error({
-            title: '系統提示',
-            message: '運行代碼失敗！',
-          });
-        })
+      console.log(this.output)
+      // const formData = new FormData();
+      // formData.append('file', this.geo.fileList[0]); 
+      // formData.append('filename',this.geo.fileList[0].name);
+      // axios.post('/run/upload',formData,{
+      //     headers:{
+      //       'Content-Type': 'multipart/form-data',
+      //       'user-token':jsCookie.get('token')
+      //     }
+      //   })
+      //   .then(res=>{
+      //     this.$router.replace('/list');
+      //   })
+      //   .catch(e=>{
+      //     console.log(e)
+      //     this.$notify.error({
+      //       title: '系統提示',
+      //       message: '運行代碼失敗！',
+      //     });
+      //   })
     }
   }
 }
