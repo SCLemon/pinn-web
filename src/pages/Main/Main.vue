@@ -146,6 +146,7 @@ export default {
       // output
       isSending:false,
       output:{},
+      originalCode:'',
       totalCode:'',
       // code block
       isDraggable:true,
@@ -414,10 +415,11 @@ export default {
         json:JSON.stringify(this.output)
       })
       .then(res=>{
-        if(res.data == '```\n'+'\n```') return
-        this.totalCode = res.data;
+        if(res.data =='') return
+        this.originalCode = res.data
+        this.totalCode ='```\n'+res.data+'\n```';
         const md = markdownit()
-        res.data = md.render(res.data)
+        res.data = md.render(this.totalCode)
         this.$bus.$emit('setCode',res.data)
       })
       .catch(e=>{

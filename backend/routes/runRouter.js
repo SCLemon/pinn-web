@@ -31,11 +31,11 @@ router.post('/run/code',(req, res) => {
             // 刪除臨時文件
             fs.unlinkSync(tempFilePath);
             console.log(stderr)
-            res.send('```\n'+`${stdout}`+'\n```');
+            res.send(stdout);
         });
     }
     catch(e){
-        res.send('```\n'+`${stdout}`+'\n```');
+        res.send(stdout);
     }
 });
 
