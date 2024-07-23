@@ -9,17 +9,11 @@
     <div class="config" ref="config">
       <div class="top" @click="back()"><i class="fa-solid fa-arrow-left arrow"></i>back</div>
       <div class="geometry">
-        <div class="title">Geometry</div>
-        <div class="dimension">
-          dimension: <el-input-number class="dimension_input" v-model="geo.dimension" controls-position="right" :min="1" :max="3" @change="changeDimension()"></el-input-number>
-        </div>
-        <div class="wireframe">
-          WireFrame: <el-switch class="normalize_switch" v-model="geo.wireframe" active-color="#13ce66" @change="toggleWireFrame()"></el-switch>
-        </div>
+        <div class="title">Geometry  <div class="wireframe">WireFrame: <el-switch class="normalize_switch" v-model="geo.wireframe" active-color="#13ce66" @change="toggleWireFrame()"></el-switch></div></div>
         <div class="geo_subTitle">Mesh</div>
         <div class="mesh">
           <el-upload
-            class="upload" action="" accept=".stl,.vtp" :http-request="handleUpload" :on-remove="handleRemove" :on-preview="handlePreview"
+            class="upload" action="" accept=".stl" :http-request="handleUpload" :on-remove="handleRemove" :on-preview="handlePreview"
             multiple :file-list="geo.fileList"  drag>
             <i class="el-icon-upload"></i>
             <div class="el-upload__text">將文件拖到此處，或<em>點擊上傳</em></div>
@@ -54,7 +48,6 @@
         <div class="geo_subTitle">Scale</div>
         <div class="scale">
           factor: <el-input-number class="dimension_input" v-model="geo.factor" controls-position="right" :min="1" @change="changeScale()"></el-input-number>
-          <el-checkbox class="factor_normalize" v-model="geo.factor_normailize">正規化</el-checkbox>
         </div>
       </div>
       <div class="function_part">
@@ -99,7 +92,7 @@
           </grid-item>
         </grid-layout>
       </div>
-      <el-button type="primary" class="send" @click="collect()" :loading="isSending">{{ isSending?'資料建構中':'確認送出' }}</el-button>
+      <el-button type="primary" class="send" @click="sendTest()" :loading="isSending">{{ isSending?'資料建構中':'確認送出' }}</el-button>
     </div>
     <div class="content">
       <stl-viewer v-show="showType=='Preview'"></stl-viewer>
@@ -134,10 +127,8 @@ export default {
       showType:'Preview',
       // Geometry
       geo:{
-        dimension:3,
         wireframe:true,
         factor:3,
-        factor_normailize:false,
         pos_normalize:true,
         pos:{
           x:0,y:0,z:0
@@ -171,6 +162,12 @@ export default {
       immediate:false
     },
     layout_values:{
+      handler() {
+        this.collect();
+      },
+      deep:true,
+    },
+    geo:{
       handler() {
         this.collect();
       },
@@ -225,11 +222,6 @@ export default {
     changeScale(){
       this.$bus.$emit('handleStlConfig','scale',{
         factor:this.geo.factor
-      })
-    },
-    changeDimension(){
-      this.$bus.$emit('handleStlConfig','dimension',{
-        dimension:this.geo.dimension
       })
     },
     toggleWireFrame(){
@@ -416,23 +408,24 @@ export default {
     },
     // 獲取預覽程式碼
     getPreviewCode(){
-      // axios.post('/run/code',{
-      //   json:JSON.stringify(this.output)
-      // })
-      // .then(res=>{
-      //   console.log(res.data)
-      //   // this.totalCode = res.data;
-      //   // const md = markdownit()
-      //   // res.data = md.render(res.data)
-      //   // this.$bus.$emit('setCode',res.data)
-      // })
-      // .catch(e=>{
-      //   console.log(e)
-      //   this.$notify.error({
-      //     title: '系統提示',
-      //     message: '預覽代碼生成失敗！',
-      //   });
-      // })
+      axios.post('/run/code',{
+        json:JSON.stringify(this.output)
+      })
+      .then(res=>{
+        if(res.data == '```\n'+'\n```') return
+        console.log(res.data)
+        this.totalCode = res.data;
+        const md = markdownit()
+        res.data = md.render(res.data)
+        this.$bus.$emit('setCode',res.data)
+      })
+      .catch(e=>{
+        console.log(e)
+        this.$notify.error({
+          title: '系統提示',
+          message: '預覽代碼生成失敗！',
+        });
+      })
     },
     // 將程式碼傳至後端進行運算
     send(){
@@ -527,10 +520,15 @@ export default {
   .dimension_input{
     margin-left: 5px;
   }
+  .title{
+    position: relative;
+    height: 40px;
+  }
   .wireframe{
-    margin-top: 20px;
-    margin-left: 10px;
-    margin-bottom: 20px;
+    position: absolute;
+    top:0;
+    right: 20px;
+    font-size: 18px;
   }
   .mesh{
     margin-left: 10px;

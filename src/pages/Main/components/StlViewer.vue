@@ -107,7 +107,8 @@ export default {
                 });
                 overallCenter.normalize();
             }
-            this.$bus.$emit('setCenter',overallCenter.x,overallCenter.y,overallCenter.z);
+            if(isNaN(overallCenter.x) || isNaN(overallCenter.y) || isNaN(overallCenter.z)) this.$bus.$emit('setCenter',0,0,0);
+            else this.$bus.$emit('setCenter',overallCenter.x,overallCenter.y,overallCenter.z);
         },
         // 調整參數
         handleConfig(prop,config){
