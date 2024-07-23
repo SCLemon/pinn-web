@@ -396,7 +396,7 @@ export default {
           this.output.blocks.push(structure);
         }
         else{ // code block
-          var code = this.layout_values[`${obj.i}_${obj.type}`]
+          var code = this.layout_values[`${obj.i}_${obj.type}`].split('\n');;
           this.output.blocks.push({
             uuid:obj.i,
             type:'manual',
