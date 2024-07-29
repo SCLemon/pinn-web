@@ -92,7 +92,7 @@
           </grid-item>
         </grid-layout>
       </div>
-      <el-button type="primary" class="send" @click="(!isSending && !isCreateCode && init > 1)?send():''" :loading="isSending || isCreateCode">{{ isSending || isCreateCode?'資料建構中':'確認送出' }}</el-button>
+      <el-button type="primary" class="send" @click="(!isSending && !isCreateCode && init>1)?send():''" :loading="isSending || isCreateCode">{{ isSending || isCreateCode?'資料建構中':'確認送出' }}</el-button>
     </div>
     <div class="content">
       <stl-viewer v-show="showType=='Preview'"></stl-viewer>
@@ -174,12 +174,14 @@ export default {
     layout_values:{
       handler() {
         this.collect();
+        this.init++;
       },
       deep:true,
     },
     geo:{
       handler() {
         this.collect();
+        this.init++;
       },
       deep:true,
     }

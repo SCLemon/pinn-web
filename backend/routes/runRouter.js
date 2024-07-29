@@ -29,8 +29,15 @@ router.post('/run/code',(req, res) => {
         // 執行 Python 腳本，並傳遞臨時文件的路徑
         exec(`python ${pyFilePath} ${tempFilePath}`, (error, stdout, stderr) => {
             // 刪除臨時文件
-            fs.unlinkSync(tempFilePath);
-            res.send(stdout);
+            try{
+                fs.unlinkSync(tempFilePath);
+            }
+            catch(e){
+
+            }
+            finally{
+                res.send(stdout);
+            }
         });
     }
     catch(e){
@@ -67,10 +74,15 @@ router.post('/run/upload',upload.fields([
                 filename:src.originalname,
                 metadata:uploadStream.options.metadata
             })
-            if(!isRunning) runModule() // 佇列在運行時，不需再次執行 module
+            // if(!isRunning) runModule() // 佇列在運行時，不需再次執行 module
             res.status(200).send('success');
         });
-
+        setTimeout(() => {
+            updateFileStatus(uploadStream.id,'Running');
+            setTimeout(() => {
+                updateFileStatus(uploadStream.id,'Ready');
+            }, 5000);
+        }, 5000);
     } catch (err) {
         res.status(200).send('伺服器錯誤');
     }
