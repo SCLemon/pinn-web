@@ -92,7 +92,7 @@
           </grid-item>
         </grid-layout>
       </div>
-      <el-button type="primary" class="send" @click="sendTest()" :loading="isSending">{{ isSending?'資料建構中':'確認送出' }}</el-button>
+      <el-button type="primary" class="send" @click="(!isSending && !isCreateCode && init > 1)?send():''" :loading="isSending || isCreateCode">{{ isSending || isCreateCode?'資料建構中':'確認送出' }}</el-button>
     </div>
     <div class="content">
       <stl-viewer v-show="showType=='Preview'"></stl-viewer>
@@ -131,7 +131,7 @@ export default {
   },
   data(){
     return {
-      init:false,
+      init:0,
       showType:'Preview',
       // Geometry
       geo:{
@@ -152,6 +152,7 @@ export default {
       parameter_type:'',
       parameter_selected:'',
       // output
+      isCreateCode:false,
       isSending:false,
       output:{},
       originalCode:'',
@@ -340,6 +341,7 @@ export default {
 
     // 搜集參數配置
     collect(){
+      this.isCreateCode =true;
       // 重置輸出物件
       this.output = {
         normalize:{
@@ -437,44 +439,39 @@ export default {
           message: '預覽代碼生成失敗！',
         });
       })
+      .finally(()=>{
+        this.isCreateCode = false;
+      })
     },
-    // 將程式碼傳至後端進行運算
+    // 發送代碼
     send(){
-      axios.post('/run/module',{
-        data:this.totalCode       // 獲取整體程式碼
-      })
-      .then(res=>{
-        console.log(res.data)
-      }).catch(e=>{
-        console.log(e)
-        this.$notify.error({
-          title: '系統提示',
-          message: '運行代碼失敗！',
-        });
-      })
-    },
-    // 測試用(之後會在後端應用 --> 儲存檔案用)
-    sendTest(){
-      console.log(this.output)
-      // const formData = new FormData();
-      // formData.append('file', this.geo.fileList[0]); 
-      // formData.append('filename',this.geo.fileList[0].name);
-      // axios.post('/run/upload',formData,{
-      //     headers:{
-      //       'Content-Type': 'multipart/form-data',
-      //       'user-token':jsCookie.get('token')
-      //     }
-      //   })
-      //   .then(res=>{
-      //     this.$router.replace('/list');
-      //   })
-      //   .catch(e=>{
-      //     console.log(e)
-      //     this.$notify.error({
-      //       title: '系統提示',
-      //       message: '運行代碼失敗！',
-      //     });
-      //   })
+      this.isSending = true;
+      const code = new File([this.originalCode], "main.py", { type: "text/plain" });
+      const formData = new FormData();
+      for(var i=0;i<this.geo.fileList.length;i++) formData.append('stlFiles', this.geo.fileList[i],this.geo.fileList[i].name); 
+      formData.append('code',code);
+      axios.post('/run/upload',formData,{
+          headers:{
+            'Content-Type': 'multipart/form-data',
+            'user-token':jsCookie.get('token')
+          }
+        })
+        .then(res=>{
+          if(res.data == 'success') this.$router.replace('/list');
+          else this.$notify.error({
+            title: '系統提示',
+            message: res.data,
+          });
+        })
+        .catch(e=>{
+          this.$notify.error({
+            title: '系統提示',
+            message: '運行代碼失敗！',
+          });
+        })
+        .finally(()=>{
+          this.isSending = false;
+        })
     }
   }
 }

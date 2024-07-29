@@ -30,7 +30,6 @@ router.post('/run/code',(req, res) => {
         exec(`python ${pyFilePath} ${tempFilePath}`, (error, stdout, stderr) => {
             // 刪除臨時文件
             fs.unlinkSync(tempFilePath);
-            console.log(stderr)
             res.send(stdout);
         });
     }
@@ -39,31 +38,37 @@ router.post('/run/code',(req, res) => {
     }
 });
 
-// Step 2. 資料建立 <-- 以 File 形式傳至後端
+// Step 2. 資料建立
 const upload = multer();
-router.post('/run/upload',upload.single('file'),(req, res) => {
-    var file = req.file;
-    var filename = req.body.filename
+router.post('/run/upload',upload.fields([
+    { name: 'stlFiles', maxCount: 50 },
+    { name: 'code', maxCount: 1 }
+])
+,(req, res) => {
+    var files = req.files['stlFiles'];
+    if(!files) return res.status(200).send('STL 資料不可為空');
+    var src = req.files['code'][0];
     var token = req.headers['user-token'];
+    var path = saveFiles(files,token) // 暫存 stl 資料並獲取資料夾路徑
     const db = getDb();
     const bucket = new GridFSBucket(db);
     try {
         // 放入資料庫
         const readableStream = new Readable();
-        readableStream.push(file.buffer); // 輸入 python 文件內容
+        readableStream.push(src.buffer); // 輸入 python 文件內容
         readableStream.push(null); // 結束流
         const uploadStream = bucket.openUploadStream(`${format(new Date(), 'hhmm')}_project`,{
-            metadata: {token: token, date:format(new Date(),'yyyy-MM-dd'),status:'Queuing',output:''}
+            metadata: {token: token, path:path , date:format(new Date(),'yyyy-MM-dd'),status:'Queuing',output:''} // 將 stl 資料路徑存在 metadata 中
         });
         readableStream.pipe(uploadStream);
         uploadStream.on('finish', () => {
             queue.push({ // 添加至佇列
                 id:uploadStream.id,
-                filename:filename,
+                filename:src.originalname,
                 metadata:uploadStream.options.metadata
             })
             if(!isRunning) runModule() // 佇列在運行時，不需再次執行 module
-            res.status(200).send('資料儲存成功');
+            res.status(200).send('success');
         });
 
     } catch (err) {
@@ -71,7 +76,37 @@ router.post('/run/upload',upload.single('file'),(req, res) => {
     }
 });
 
-// Step 3. 執行 python module
+function saveFiles(files,token){ // 創建資料夾並儲存文件
+    const folderName = `${token}_${format(new Date(), 'yyyyMMddHHmmss')}_project`;
+    const folderPath = path.join(__dirname, 'uploads', folderName);
+    fs.mkdirSync(folderPath, { recursive: true });
+    try {
+        files.forEach(file => {
+            const filePath = path.join(folderPath, file.originalname);
+            fs.writeFileSync(filePath, file.buffer);
+        });
+
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+function deleteFolder(folderPath) { // 刪除資料夾
+    if (fs.existsSync(folderPath)) {
+        const files = fs.readdirSync(folderPath);
+        for (const file of files) {
+            const curPath = path.join(folderPath, file);
+            if (fs.lstatSync(curPath).isDirectory()) {
+                deleteFolderSync(curPath);
+            } else {
+                fs.unlinkSync(curPath);
+            }
+        }
+        fs.rmdirSync(folderPath);
+    }
+}
+
+// Step 3. 執行 python module <-- 待完成
 function runModule(){
     if(queue.length == 0){
         isRunning = false;
@@ -93,7 +128,9 @@ function runModule(){
     downloadStream.on('end', () => {
         // 執行 python 檔
         updateFileStatus(target.id,'Running');
-        exec(`python ${tempFilePath}`, (error, stdout, stderr) => {
+
+        // python <python path> <stl folder path> <-- 待完成
+        exec(`python ${tempFilePath} ${target.metadata.path}`, (error, stdout, stderr) => {
             try{
                 // 讀取輸出檔案
                 var file;
@@ -104,12 +141,11 @@ function runModule(){
                     filename:target.filename,
                     metadata:target.metadata
                 }) 
+
                 // 刪除臨時文件
-                fs.unlink(tempFilePath, (err) => {
-                    if (err) {
-                        console.error('Error deleting temp file:', err);
-                    }
-                });
+                fs.unlinkSync(tempFilePath);
+                // 刪除臨時資料夾
+                deleteFolder(target.metadata.path);
             }
             catch(e){ console.log(e) }
             finally{
