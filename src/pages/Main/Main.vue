@@ -71,11 +71,7 @@
                 <div class="delete" @click="deleteItem(item.i)"><i class="el-icon-delete"></i></div>
                 </div>
                 <div class="property" v-for="(p,id) in item.detail.property" :key="id">
-                  {{ typeof p != 'object'? p : p.type}}: 
-                    <el-input class="property-input" v-if="typeof p != 'object' " placeholder="請輸入內容" v-model="layout_values[`${item.i}_${item.detail.function}_${p}`]"></el-input>
-                    <span v-else>
-                      <el-input class="property-select"  placeholder="請輸入內容" v-model="layout_values[`${item.i}_${item.detail.function}_${p.type}`]" @focus="tips(p.type,p.options)"></el-input>
-                    </span>
+                  {{p.type}}: <el-input class="property-select"  :placeholder="p.placeholder?p.placeholder:'請輸入內容'" v-model="layout_values[`${item.i}_${item.detail.function}_${p.type}`]" @focus="p.showTips?tips(p.type,p.options):''"></el-input>
                 </div>
               </div>
               <div v-else>
@@ -671,12 +667,8 @@ export default {
     margin-top: 10px;
     padding-left: 5px;
   }
-  .property-input{
-    width: 45%;
-    margin-left: 5px;
-  }
   .property-select{
-    width: 35%;
+    width: 40%;
   }
   .inputCode{
     width: 90%;

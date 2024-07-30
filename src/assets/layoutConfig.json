@@ -1,48 +1,97 @@
 {
-    "Functions":{
-        "NavierStokes":{
-            "function":"NavierStokes",
-            "property":["name","nu","rho","dim",{"type":"time","options":["True","False"]}]
+    "Functions": {
+        "NavierStokes": {
+            "function": "NavierStokes",
+            "property": [
+                { "type": "name", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "nu", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "rho", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "dim", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "time", "options": ["True", "False"], "placeholder": "True", "showTips": true }
+            ]
         },
-        "NormalDotVec":{
-            "function":"NormalDotVec",
-            "property":["name",{"type":"vec","options":["['u','v','w']","['u','v']","['u']"]}]
+        "NormalDotVec": {
+            "function": "NormalDotVec",
+            "property": [
+                { "type": "name", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "vec", "options": ["['u','v','w']", "['u','v']", "['u']"], "placeholder": "['u','v','w']", "showTips": true }
+            ]
         }
     },
-    "Neural":{
-        "FullyConnectedArch":{
-            "function":"FullyConnectedArch",
-            "property":["name",
-                {"type":"input_keys","options":["['x','y','z']","['x','y']","['x']"]},
-                {"type":"output_keys","options":["['u','v','w','p']","['u','v','p']","['u','p']"]},
-                "layer_size","nr_layers",{"type":"adaptive_activations","options":["True","False"]}]
+    "Neural": {
+        "FullyConnectedArch": {
+            "function": "FullyConnectedArch",
+            "property": [
+                { "type": "name", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "input_keys", "options": ["['x','y','z']", "['x','y']", "['x']"], "placeholder": "['x','y','z']", "showTips": true },
+                { "type": "output_keys", "options": ["['u','v','w','p']", "['u','v','p']", "['u','p']"], "placeholder": "['u','v','w','p']", "showTips": true },
+                { "type": "layer_size", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "nr_layers", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "adaptive_activations", "options": ["True", "False"], "placeholder": "True", "showTips": true }
+            ]
         },
-        "FourierNetArch":{
-            "function":"FourierNetArch",
-            "property":["name",
-                {"type":"input_keys","options":["['x','y','z']","['x','y']","['x']"]},
-                {"type":"output_keys","options":["['u','v','w','p']","['u','v','p']","['u','p']"]},
-                "layer_size","nr_layers",{"type":"adaptive_activations","options":["True","False"]}]
+        "FourierNetArch": {
+            "function": "FourierNetArch",
+            "property": [
+                { "type": "name", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "input_keys", "options": ["['x','y','z']", "['x','y']", "['x']"], "placeholder": "['x','y','z']", "showTips": true },
+                { "type": "output_keys", "options": ["['u','v','w','p']", "['u','v','p']", "['u','p']"], "placeholder": "['u','v','w','p']", "showTips": true },
+                { "type": "layer_size", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "nr_layers", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "adaptive_activations", "options": ["True", "False"], "placeholder": "True", "showTips": true }
+            ]
         }
     },
-    "Constraint":{
-        "PointwiseBoundaryConstraint":{
-            "function":"PointwiseBoundaryConstraint",
-            "property":["name","nodes","geometry","outvar","batch_size","bounds","criteria","lambda_weighting"]
+    "Constraint": {
+        "PointwiseBoundaryConstraint": {
+            "function": "PointwiseBoundaryConstraint",
+            "property": [
+                { "type": "name", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "nodes", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "geometry", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "outvar", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "batch_size", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "bounds", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "criteria", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "lambda_weighting", "placeholder": "請輸入內容", "showTips": false }
+            ]
         },
-        "PointwiseInteriorConstraint":{
-            "function":"PointwiseInteriorConstraint",
-            "property":["name","nodes","geometry","outvar","batch_size","bounds","criteria","lambda_weighting"]
+        "PointwiseInteriorConstraint": {
+            "function": "PointwiseInteriorConstraint",
+            "property": [
+                { "type": "name", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "nodes", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "geometry", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "outvar", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "batch_size", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "bounds", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "criteria", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "lambda_weighting", "placeholder": "請輸入內容", "showTips": false }
+            ]
         },
-        "IntegralBoundaryConstraint":{
-            "function":"IntegralBoundaryConstraint",
-            "property":["name","nodes","geometry","outvar","batch_size","bounds","criteria","lambda_weighting"]
+        "IntegralBoundaryConstraint": {
+            "function": "IntegralBoundaryConstraint",
+            "property": [
+                { "type": "name", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "nodes", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "geometry", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "outvar", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "batch_size", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "bounds", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "criteria", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "lambda_weighting", "placeholder": "請輸入內容", "showTips": false }
+            ]
         }
     },
-    "Nodes":{
-        "Nodes":{
-            "function":"Nodes",
-            "property":["name",{"type":"equations","options":["['ns','normal_dot_vel]'"]},{"type":"architectures","options":["['flow_net','flow_net1']"]}]
+    "Nodes": {
+        "Nodes": {
+            "function": "Nodes",
+            "property": [
+                { "type": "name", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "equations", "options": ["['ns','normal_dot_vel]"], "placeholder": "['ns','normal_dot_vel']", "showTips": true },
+                { "type": "architectures", "options": ["['flow_net','flow_net1']"], "placeholder": "['flow_net','flow_net1']", "showTips": true }
+            ]
         }
     }
-}
+  }
+  
