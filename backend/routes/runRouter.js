@@ -3,7 +3,6 @@ const router = express.Router();
 const archiver = require('archiver');
 const { format } =require('date-fns');
 const multer = require('multer');
-const { getDb } = require('../db/db');
 const fileModel = require('../models/fileModel');
 const { exec } = require('child_process'); // 執行 shell
 const fs = require('fs');
@@ -62,16 +61,14 @@ router.post('/run/upload',upload.fields([
             uuid:uuid,
             name:`${format(new Date(),'HHmm')}_project`,
             date: format(new Date(),'yyyy/MM/dd'),
-            status:'Ready',
+            status:'Queuing',
             inputRoute:path,
             outputName: `${format(new Date(),'HHmm')}_project.zip`,
             outputRoute:path
         })
         .then((data, err) => {
-            queue.push({
-                uuid:uuid,
-                path:path
-            });
+            queue.push({uuid:uuid,path:path});
+            if(!isRunning) runModule();
             res.status(200).send('success');
         })
     } catch (err) {
@@ -111,12 +108,30 @@ function deleteFolder(folderPath) { // 刪除資料夾
 
 // Step 3. 執行 python module
 function runModule(){
-
+    isRunning = true;
+    if(queue.length == 0){
+        isRunning = false;
+        return;
+    }
+    var target = queue[0];
+    updateFileStatus(target.uuid,'Running');
+    setTimeout(() => {
+        updateFileStatus(target.uuid,'Ready');
+        queue.pop();
+        setTimeout(() => {
+            runModule();
+        }, 5000);
+    }, 5000);
 }
 
 // Step 4. 修改狀態 Running or Ready
-async function updateFileStatus(idx,status){
-
+async function updateFileStatus(uuid,status){
+    fileModel.updateOne(           
+        { uuid: uuid },
+        { $set: { status: status } }
+    ).then(res=>{
+        console.log(res)
+    })
 };
 
 // Step 5. 取代檔案
