@@ -19,27 +19,14 @@ router.post('/run/code',(req, res) => {
     try{
         const tempFilePath = path.join(os.tmpdir(), 'temp.json');
         const pyFilePath = path.join(__dirname, 'parser/json_parser.py');
-        // 擷取資料並寫入臨時文件
         const jsonObject = req.body.json;
         fs.writeFileSync(tempFilePath, jsonObject, 'utf8');
-    
-        // 執行 Python 腳本，並傳遞臨時文件的路徑
         exec(`python ${pyFilePath} ${tempFilePath}`, (error, stdout, stderr) => {
             // 刪除臨時文件
-            try{
-                fs.unlinkSync(tempFilePath);
-            }
-            catch(e){
-
-            }
-            finally{
-                res.send(stdout);
-            }
-        });
-    }
-    catch(e){
-        res.send('');
-    }
+            try{fs.unlinkSync(tempFilePath);}
+            catch(e){}
+            finally{res.send(stdout);}
+        });}catch(e){res.send('');}
 });
 
 // Step 2. 資料建立
@@ -54,20 +41,30 @@ router.post('/run/upload',upload.fields([
     const uuid = uuidv4();
     var src = req.files['code'][0];
     var token = req.headers['user-token'];
-    var path = saveFiles(files,src,uuid);
+    var fPath = saveFiles(files,src,uuid);
+
+    /* 寫入 config.yaml 開始*/
+    const sourceFilePath = path.join(__dirname, '/config/config.yaml');
+    const targetDir = path.join(fPath, 'conf');
+    if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
+    const targetFilePath = path.join(fPath, 'conf', 'config.yaml');
+    fs.copyFile(sourceFilePath, targetFilePath, (err) => {});
+    /* 寫入 config.yaml 結束 */
+
+    var name = `${format(new Date(),'HHmm')}_project`;
     try {
         fileModel.create({
             token:token,
             uuid:uuid,
-            name:`${format(new Date(),'HHmm')}_project`,
+            name:name,
             date: format(new Date(),'yyyy/MM/dd'),
             status:'Queuing',
-            inputRoute:path,
-            outputName: `${format(new Date(),'HHmm')}_project.zip`,
-            outputRoute:path
+            inputRoute:fPath,
+            outputName: '',
+            outputRoute: ''
         })
         .then((data, err) => {
-            queue.push({uuid:uuid,path:path});
+            queue.push({uuid:uuid,name:name,path:fPath});
             if(!isRunning) runModule();
             res.status(200).send('success');
         })
@@ -76,13 +73,14 @@ router.post('/run/upload',upload.fields([
     }
 });
 
-function saveFiles(files,src,uuid){ // 創建資料夾並儲存文件
+function saveFiles(files,src,uuid){
     const folderName = `${uuid}`;
-    const folderPath = path.join(__dirname, '../../../workspace', folderName);
-    fs.mkdirSync(folderPath, { recursive: true });
+    const folderPath = path.join(__dirname, '../../../workspace/modulus-sym/examples/aneurysm'); // 這之後要修改
+    const stlFolderPath = path.join(folderPath,'stl_files');
+    fs.mkdirSync(stlFolderPath, { recursive: true });
     try {
         files.forEach(file => {
-            const filePath = path.join(folderPath, file.originalname);
+            const filePath = path.join(stlFolderPath, file.originalname);
             fs.writeFileSync(filePath, file.buffer);
         });
         fs.writeFileSync(path.join(folderPath, 'main.py'),src.buffer);
@@ -97,7 +95,7 @@ function deleteFolder(folderPath) { // 刪除資料夾
         for (const file of files) {
             const curPath = path.join(folderPath, file);
             if (fs.lstatSync(curPath).isDirectory()) {
-                deleteFolderSync(curPath);
+                deleteFolder(curPath);
             } else {
                 fs.unlinkSync(curPath);
             }
@@ -115,13 +113,13 @@ function runModule(){
     }
     var target = queue[0];
     updateFileStatus(target.uuid,'Running');
-    setTimeout(() => {
+    exec(`python ${target.path}/main.py`,(error,stdout,stderr)=>{
+        console.log('end');
         updateFileStatus(target.uuid,'Ready');
+        replaceFile(target.uuid,target.name,target.path)
         queue.pop();
-        setTimeout(() => {
-            runModule();
-        }, 5000);
-    }, 5000);
+        runModule();
+    })
 }
 
 // Step 4. 修改狀態 Running or Ready
@@ -129,14 +127,17 @@ async function updateFileStatus(uuid,status){
     fileModel.updateOne(           
         { uuid: uuid },
         { $set: { status: status } }
-    ).then(res=>{
-        console.log(res)
-    })
+    ).then(res=>{})
 };
 
 // Step 5. 取代檔案
-async function replaceFile(file,options) {
-
+async function replaceFile(uuid,name,path) {
+    fileModel.updateOne({uuid:uuid},{
+        $set: {
+            outputName: name+'.zip',
+            outputRoute: path+'/outputs'
+        },
+    }).then(res=>{})
 }
 
 // 下載檔案
@@ -171,7 +172,8 @@ router.get('/run/findAll', async (req, res) => {
                     filename:obj.name,
                     date:obj.date,
                     output:obj.outputName,
-                    outputRoute:obj.outputRoute
+                    outputRoute:obj.outputRoute,
+                    inputRoute:obj.inputRoute
                 }
             })
             res.status(200).send(output);
@@ -184,12 +186,12 @@ router.get('/run/findAll', async (req, res) => {
 // 刪除檔案
 router.delete('/run/delete', async (req, res) => {
     var fileId = req.body.fileId;
-    var outputRoute = req.body.outputRoute;
-    if(!fileId || !outputRoute) return res.send('Failed To Detele Project');
+    var route = req.body.route;
+    if(!fileId || !route) return res.send('Failed To Detele Project');
     fileModel.deleteOne({uuid:fileId})
     .then(data=>{
         if(data.deletedCount){
-            deleteFolder(outputRoute);
+            deleteFolder(route);
             res.send('success');
         }
         else res.send('Failed To Detele Project');

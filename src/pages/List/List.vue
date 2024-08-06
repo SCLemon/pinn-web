@@ -16,7 +16,7 @@
                     </template>
                     <template slot-scope="scope">
                         <el-button size="mini" @click="(scope.row.status =='Ready' && !isDownload[scope.$index])?handleDownload(scope.row.output,scope.row.outputRoute,scope.$index):''" :disabled="scope.row.status !='Ready' || isDownload[scope.$index]">下載</el-button>
-                        <el-button size="mini" type="danger" @click="scope.row.status =='Ready'?handleDelete(scope.row.id,scope.row.outputRoute):''" :disabled="scope.row.status !='Ready'">刪除</el-button>
+                        <el-button size="mini" type="danger" @click="scope.row.status =='Ready'?handleDelete(scope.row.id,scope.row.inputRoute):''" :disabled="scope.row.status !='Ready'">刪除</el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -92,7 +92,7 @@ export default {
         handleDelete(idx,route){
             this.$confirm('確認刪除?', '提示', {confirmButtonText: '確定',cancelButtonText: '取消',type: 'warning'})
             .then(() => {
-                axios.delete(`/run/delete`,{data: {fileId: idx,outputRoute: route}})
+                axios.delete(`/run/delete`,{data: {fileId: idx,route: route}})
                 .then(res=>{
                     this.$message({type: 'success',message: '刪除成功!'});
                     this.getList();
