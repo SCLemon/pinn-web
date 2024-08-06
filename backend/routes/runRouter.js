@@ -86,7 +86,7 @@ router.post('/run/upload',upload.fields([
 function saveFiles(files,src,uuid){
     const folderName = `${uuid}`;
     const folderPath = path.join(__dirname, '../../../workspace/modulus-sym/examples/aneurysm'); // 這之後要修改
-    console.log(folderPath)
+
     const stlFolderPath = path.join(folderPath,'stl_files');
     fs.mkdirSync(stlFolderPath, { recursive: true });
     try {
@@ -167,7 +167,7 @@ router.delete('/run/delete', async (req, res) => {
     var fileId = req.body.fileId;
     var input = req.body.inputRoute;
     var output = req.body.outputRoute;
-    if(!fileId || !input || output) return res.send('Failed To Detele Project');
+    if(!fileId || !input || !output) return res.send('Failed To Detele Project');
     fileModel.deleteOne({uuid:fileId})
     .then(data=>{
         if(data.deletedCount){
