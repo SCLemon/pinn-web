@@ -11,6 +11,7 @@ const fileSchema = new mongoose.Schema({
     inputRoute:String,
     outputName:String,
     outputRoute:String,
+    done:Boolean,
 });
 
 //创建模型对象

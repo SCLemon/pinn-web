@@ -41,8 +41,14 @@ from modulus.sym.geometry.tessellation import Tessellation
 
 @modulus.sym.main(config_path="conf", config_name="config")
 def run(cfg: ModulusConfig) -> None:
-    # read stl files to make geometry
-    point_path = "/workspace/modulus-sym/examples/aneurysm/stl_files"
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    original_path = os.path.join(base_dir, 'stl_files')
+    original_path_arr = original_path.split('/')
+    start_index = 2
+    end_index = 4
+    original_path_arr = original_path_arr[:start_index] + original_path_arr[end_index:]
+    point_path = '/'.join(original_path_arr)
+
     inlet_mesh = Tessellation.from_stl(
         point_path + "/aneurysm_inlet.stl", airtight=False
     )
