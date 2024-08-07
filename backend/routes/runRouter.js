@@ -8,11 +8,12 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-
 const { v4: uuidv4 } = require('uuid');
 
 // docker container
 const containerID = 'Container ID'
+
+runModule(); // 初始化
 
 // Step 1. 建構 python 程式碼 <-- 無需修改
 router.post('/run/code',(req, res) => {
