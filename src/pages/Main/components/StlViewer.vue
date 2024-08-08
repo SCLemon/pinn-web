@@ -153,16 +153,8 @@ export default {
                 this.mesh = new THREE.Mesh(geometry, material);
                 this.mesh.name = file.uid;
                 
-                const boundingBox = new THREE.Box3().setFromObject(this.mesh);
-
-                // 調整大小
-                const size = new THREE.Vector3();
-                boundingBox.getSize(size);
-                const maxDimension = Math.max(size.x, size.y, size.z);
-                const scale = config.factor/maxDimension;
-                this.mesh.scale.set(scale, scale, scale);
                 this.scene.add(this.mesh);
-                this.getCenter(config.center_normalize);
+                this.getCenter(config.pos_normalize);
             };
             reader.readAsArrayBuffer(file);
         },

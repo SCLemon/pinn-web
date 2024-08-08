@@ -132,8 +132,8 @@ export default {
       // Geometry
       geo:{
         wireframe:true,
-        factor:3,
-        pos_normalize:true,
+        factor:1,
+        pos_normalize:false,
         pos:{
           x:0,y:0,z:0
         },
