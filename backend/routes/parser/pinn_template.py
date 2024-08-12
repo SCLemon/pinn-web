@@ -6,6 +6,7 @@ import numpy as np
 from sympy import Symbol
 
 import modulus.sym
+from modulus.sym.hydra import instantiate_arch
 from modulus.sym.hydra import ModulusConfig
 from modulus.sym.solver import Solver
 from modulus.sym.domain import Domain
@@ -17,6 +18,8 @@ from modulus.sym.domain.monitor import PointwiseMonitor
 from modulus.sym.key import Key
 from modulus.sym.eq.pdes.navier_stokes import NavierStokes
 from modulus.sym.eq.pdes.basic import NormalDotVec
+from modulus.sym.models.fully_connected import FullyConnectedArch
+from modulus.sym.utils.io import csv_to_dict
 from modulus.sym.geometry.tessellation import Tessellation
 
 
@@ -29,10 +32,9 @@ def run(cfg: ModulusConfig) -> None:
         mesh = mesh.scale(scale)
         return mesh
 
-    <<MESH_BLOCK>>
-
     domain = Domain()
 
+    <<MESH_BLOCK>>
     <<OTHER_BLOCKS>>
 
     # make solver

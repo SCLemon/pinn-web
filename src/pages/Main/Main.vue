@@ -144,7 +144,7 @@ export default {
       layout:[],
       orderedLayout:[],
       layout_values:{},
-      parameter:['Equations','Neural Network Architecture','Constraints','Nodes'],
+      parameter:['Equations','Neural Network Architecture','Constraints','Nodes','Monitor'],
       parameter_type:'',
       parameter_selected:'',
       // output
@@ -199,6 +199,10 @@ export default {
     nd_structure(){
       return structure.Nodes
     },
+    // Monitor block
+    mt_structure(){
+      return structure.Monitor
+    },
     options(){
       switch (this.parameter_type) {
         case 'Equations':
@@ -209,6 +213,8 @@ export default {
           return this.cs_structure
         case 'Nodes':
           return this.nd_structure
+        case 'Monitor':
+          return this.mt_structure
         default:
           return [];
       }
@@ -396,6 +402,9 @@ export default {
               break;
             case 'Nodes':
               structure.type = 'nodes'
+              break;
+            case 'Monitor':
+              structure.type = 'monitor'
               break;
           }
           // 汲取資料

@@ -1,7 +1,5 @@
-//导入 mongoose
 const mongoose = require('mongoose');
 
-// 创建文档结构
 const fileSchema = new mongoose.Schema({
     token:String,
     uuid:String,
@@ -14,8 +12,7 @@ const fileSchema = new mongoose.Schema({
     done:Boolean,
 });
 
-//创建模型对象
 const fileModel = mongoose.model('files', fileSchema);
 
-//暴露
 module.exports = fileModel;
+

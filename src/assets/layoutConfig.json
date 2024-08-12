@@ -92,6 +92,19 @@
                 { "type": "architectures", "options": ["['flow_net','flow_net1']"], "placeholder": "['flow_net','flow_net1']", "showTips": true }
             ]
         }
+    },
+    "Monitor": {
+        "PointwiseMonitor": {
+            "function": "PointwiseMonitor",
+            "property": [
+                { "type": "name", "placeholder": "請輸入內容", "showTips": false },
+                { "type": "invar", "placeholder": "inlet_mesh.sample_boundary(16)","options":["inlet_mesh.sample_boundary(16)"], "showTips": true },
+                { "type": "output_names", "placeholder": "['p']", "showTips": false },
+                { "type": "metrics", "placeholder": "{'pressure_drop': lambda var: torch.mean(var['p'])}", "options":["{'pressure_drop': lambda var: torch.mean(var['p'])}"], "showTips": true },
+                { "type": "nodes", "placeholder": "nodes", "showTips": false },
+                { "type": "requires_grad", "options": ["True", "False"], "placeholder": "True", "showTips": true }
+            ]
+        }
     }
   }
   
