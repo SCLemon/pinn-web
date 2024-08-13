@@ -4,7 +4,7 @@ const archiver = require('archiver');
 const { format } =require('date-fns');
 const multer = require('multer');
 const fileModel = require('../models/fileModel');
-const { exec } = require('child_process');
+const { exec,spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -112,12 +112,21 @@ async function runModule(){
     currentProcess = res.uuid;
     var target = res;
     await updateFileStatus(target.uuid,'Running');
-    exec(`docker exec ${containerID} python modulus-sym/examples/${res.uuid}/${res.uuid}.py`,async (error,stdout,stderr)=>{
-        console.log(error,stdout,stderr);
-        await updateFileStatus(target.uuid,'Ready');
-        await replaceFile(target.uuid,target.name)
+    const command = 'docker';
+    const args = ['exec', containerID, 'python', `modulus-sym/examples/${res.uuid}/${res.uuid}.py`];
+    const process = spawn(command, args);
+    process.stdout.on('data', (data) => {
+        console.log(`stdout: ${data}`);
+    });
+    process.stderr.on('data', (data) => {
+        console.error(`stderr: ${data}`);
+    });
+    process.on('close', async (code) => {
+        console.log(`child process exited with code ${code}`);
+        await updateFileStatus(target.uuid, 'Ready');
+        await replaceFile(target.uuid, target.name);
         await runModule();
-    })
+    });
 }
 // 修改狀態 Running or Ready <-- 無需修改
 async function updateFileStatus(uuid,status){
