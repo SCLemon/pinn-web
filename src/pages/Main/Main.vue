@@ -47,7 +47,7 @@
         </div>
         <div class="geo_subTitle">Scale</div>
         <div class="scale">
-          factor: <el-input-number class="dimension_input" v-model="geo.factor" controls-position="right" :min="1" @change="changeScale()"></el-input-number>
+          factor: <el-input-number class="dimension_input" v-model="geo.factor" controls-position="right" :min="0" :step="0.1" @change="changeScale()"></el-input-number>
         </div>
       </div>
       <div class="function_part">
