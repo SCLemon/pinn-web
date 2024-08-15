@@ -26,6 +26,9 @@ export default {
     },
     updated(){
         hljs.highlightAll();
+        this.$nextTick(()=>{
+            document.querySelector('.codeBlock').classList.add('font');
+        })
     }
 }
 </script>
@@ -37,5 +40,8 @@ export default {
         height: 100vh;
         overflow-y: scroll;
         line-height: 1.5;
+    }
+    .font {
+        font-family:  monospace;
     }
 </style>

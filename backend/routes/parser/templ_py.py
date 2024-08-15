@@ -31,6 +31,7 @@ def run(cfg: ModulusConfig) -> None:
         return mesh
 
     domain = Domain()
+    
     base_dir = os.path.dirname(os.path.abspath(__file__))
     original_path = os.path.join(base_dir, 'stl_files')
     original_path_arr = original_path.split('/')
