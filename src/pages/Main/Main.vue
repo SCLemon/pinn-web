@@ -147,6 +147,27 @@ export default {
       parameter:['Equations','Neural Network Architecture','Constraints','Nodes','Monitor'],
       parameter_type:'',
       parameter_selected:'',
+      // hydra
+      hydra: {
+          defaults: {
+            loss: "sum",
+            optimizer: "adam",
+            scheduler: "tf_exponential_lr"
+          },
+          training: {
+            rec_validation_freq: "10",
+            rec_inference_freq: "10",
+            rec_monitor_freq: "10",
+            rec_constraint_freq: "50",
+            max_steps: "1500"
+          },
+          scheduler: {
+            decay_rate: "0.95",
+            decay_steps: "15"
+          },
+          run_mode: "train"
+      },
+      outputYaml:'',
       // output
       isCreateCode:false,
       isSending:false,
@@ -353,12 +374,15 @@ export default {
           scale: 1,
           center: [0, 0, 0],
         },
+        hydra: {},
         meshes: [],
         blocks:[]
       }
+
       this.output.normalize.do = this.geo.pos_normalize;
       this.output.normalize.scale = this.geo.factor;
       this.output.normalize.center = [this.geo.pos.x,this.geo.pos.y,this.geo.pos.z];
+      this.output.hydra = this.hydra;
 
       // mesh stl
       this.geo.fileDetail.forEach(obj=>{
@@ -425,6 +449,7 @@ export default {
         }
       })
       this.getPreviewCode();
+      this.getYaml();
     },
     // 獲取預覽程式碼
     getPreviewCode(){
@@ -450,13 +475,27 @@ export default {
         this.isCreateCode = false;
       })
     },
+    // 獲取 yaml 檔案
+    getYaml(){
+      axios.post('/run/yaml',{
+        json:JSON.stringify(this.output)
+      })
+      .then(res=>{
+        this.outputYaml = res.data;
+      })
+      .catch(e=>{})
+    },
     // 發送代碼
     send(){
       this.isSending = true;
       const code = new File([this.originalCode], "main.py", { type: "text/plain" });
+      const yaml = new File([this.outputYaml], "config.yaml", { type: "text/plain" });
       const formData = new FormData();
       for(var i=0;i<this.geo.fileList.length;i++) formData.append('stlFiles', this.geo.fileList[i],this.geo.fileList[i].name); 
+      
       formData.append('code',code);
+      formData.append('yaml',yaml);
+
       axios.post('/run/upload',formData,{
           headers:{
             'Content-Type': 'multipart/form-data',

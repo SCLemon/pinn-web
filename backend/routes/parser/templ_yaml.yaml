@@ -1,0 +1,19 @@
+defaults:
+  - modulus_default
+  - loss: <<loss>>
+  - optimizer: <<optimizer>>
+  - scheduler: <<scheduler>>
+  - _self_
+
+scheduler:
+  decay_rate: <<decay_rate>>
+  decay_steps: <<decay_steps>>
+
+training:
+  rec_validation_freq: <<rec_validation_freq>>
+  rec_inference_freq: <<rec_inference_freq>>
+  rec_monitor_freq: <<rec_monitor_freq>>
+  rec_constraint_freq: <<rec_constraint_freq>>
+  max_steps: <<max_steps>>
+
+run_mode: <<run_mode>>

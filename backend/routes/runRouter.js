@@ -19,7 +19,20 @@ runModule(); // 初始化
 router.post('/run/code',(req, res) => {
     try{
         const tempFilePath = path.join(os.tmpdir(), 'temp.json');
-        const pyFilePath = path.join(__dirname, 'parser/json_parser.py');
+        const pyFilePath = path.join(__dirname, 'parser/gen_py.py');
+        const jsonObject = req.body.json;
+        fs.writeFileSync(tempFilePath, jsonObject, 'utf8');
+        exec(`python3 ${pyFilePath} ${tempFilePath}`, (error, stdout, stderr) => {
+            // 刪除臨時文件
+            try{fs.unlinkSync(tempFilePath);}
+            catch(e){}
+            finally{res.send(stdout);}
+        });}catch(e){res.send('');}
+});
+router.post('/run/yaml',(req, res) => {
+    try{
+        const tempFilePath = path.join(os.tmpdir(), 'temp2.json');
+        const pyFilePath = path.join(__dirname, 'parser/gen_yaml.py');
         const jsonObject = req.body.json;
         fs.writeFileSync(tempFilePath, jsonObject, 'utf8');
         exec(`python3 ${pyFilePath} ${tempFilePath}`, (error, stdout, stderr) => {
@@ -34,28 +47,33 @@ router.post('/run/code',(req, res) => {
 const upload = multer();
 router.post('/run/upload',upload.fields([
     { name: 'stlFiles', maxCount: 50 },
-    { name: 'code', maxCount: 1 }
+    { name: 'code', maxCount: 1 },
+    { name: 'yaml', maxCount: 1 }
 ])
 ,(req, res) => {
     var files = req.files['stlFiles'];
     if(!files) return res.status(200).send('STL 資料不可為空');
     const uuid = uuidv4();
     var src = req.files['code'][0];
+    var yaml = req.files['yaml'][0];
     var token = req.headers['user-token'];
     var fPath = saveFiles(files,src,uuid);
-    /* 寫入 config.yaml 開始*/
-    const sourceFilePath = path.join(__dirname, '/static/config.yaml');
+    
+    // 寫入 yaml
     const targetDir = path.join(__dirname, fPath, 'conf');
     if (!fs.existsSync(targetDir)) fs.mkdirSync(targetDir, { recursive: true });
     const targetFilePath = path.join(__dirname, fPath, 'conf', 'config.yaml');
-    fs.copyFile(sourceFilePath, targetFilePath, (err) => {});
-    /* 寫入 config.yaml 結束 */
+    fs.writeFileSync(targetFilePath,yaml.buffer,'utf8');
+
+    // 寫入 python file
+    const destinationFilePath = path.join(__dirname, fPath, `${uuid}.py`);
+    fs.writeFileSync(destinationFilePath,src.buffer,'utf8')
 
     /* 覆蓋 main.py 開始 */ // 之後要刪掉
     const aneurysmPath = path.join(__dirname, '/static/aneurysm.py');
-    const destinationFilePath = path.join(__dirname, fPath, `${uuid}.py`);
+    const copyToPath = path.join(__dirname, fPath, `${uuid}.py`);
     fs.readFile(aneurysmPath, 'utf8', (err, data) => {
-        fs.writeFileSync(destinationFilePath, data, 'utf8');
+        fs.writeFileSync(copyToPath, data, 'utf8');
     })
     /* 覆蓋 main.py 結束 */
 

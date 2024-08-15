@@ -88,7 +88,7 @@
             "function": "Nodes",
             "property": [
                 { "type": "name", "placeholder": "請輸入內容", "showTips": false },
-                { "type": "equations", "options": ["['ns','normal_dot_vel]"], "placeholder": "['ns','normal_dot_vel']", "showTips": true },
+                { "type": "equations", "options": ["['ns','normal_dot_vel']"], "placeholder": "['ns','normal_dot_vel']", "showTips": true },
                 { "type": "architectures", "options": ["['flow_net','flow_net1']"], "placeholder": "['flow_net','flow_net1']", "showTips": true }
             ]
         }
