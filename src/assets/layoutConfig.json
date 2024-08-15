@@ -51,7 +51,6 @@
                 { "type": "geometry", "placeholder": "請輸入內容", "showTips": false },
                 { "type": "outvar", "placeholder": "請輸入內容", "showTips": false },
                 { "type": "batch_size", "placeholder": "請輸入內容", "showTips": false },
-                { "type": "bounds", "placeholder": "請輸入內容", "showTips": false },
                 { "type": "criteria", "placeholder": "請輸入內容", "showTips": false },
                 { "type": "lambda_weighting", "placeholder": "請輸入內容", "showTips": false }
             ]
@@ -64,7 +63,6 @@
                 { "type": "geometry", "placeholder": "請輸入內容", "showTips": false },
                 { "type": "outvar", "placeholder": "請輸入內容", "showTips": false },
                 { "type": "batch_size", "placeholder": "請輸入內容", "showTips": false },
-                { "type": "bounds", "placeholder": "請輸入內容", "showTips": false },
                 { "type": "criteria", "placeholder": "請輸入內容", "showTips": false },
                 { "type": "lambda_weighting", "placeholder": "請輸入內容", "showTips": false }
             ]
@@ -77,7 +75,6 @@
                 { "type": "geometry", "placeholder": "請輸入內容", "showTips": false },
                 { "type": "outvar", "placeholder": "請輸入內容", "showTips": false },
                 { "type": "batch_size", "placeholder": "請輸入內容", "showTips": false },
-                { "type": "bounds", "placeholder": "請輸入內容", "showTips": false },
                 { "type": "criteria", "placeholder": "請輸入內容", "showTips": false },
                 { "type": "lambda_weighting", "placeholder": "請輸入內容", "showTips": false }
             ]
