@@ -490,6 +490,7 @@ export default {
       this.isSending = true;
       const code = new File([this.originalCode], "main.py", { type: "text/plain" });
       const yaml = new File([this.outputYaml], "config.yaml", { type: "text/plain" });
+      this.downloadFile(code); // 下載預覽程式碼
       const formData = new FormData();
       for(var i=0;i<this.geo.fileList.length;i++) formData.append('stlFiles', this.geo.fileList[i],this.geo.fileList[i].name); 
       
@@ -518,6 +519,13 @@ export default {
         .finally(()=>{
           this.isSending = false;
         })
+    },
+    downloadFile(file){ // File Object
+      const link = document.createElement('a');
+      link.download = file.name;
+      link.href = URL.createObjectURL(file);
+      link.click();
+      URL.revokeObjectURL(link.href);
     }
   }
 }
