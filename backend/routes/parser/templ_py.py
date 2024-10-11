@@ -1,5 +1,7 @@
 import os
 import modulus.sym
+import numpy as np
+from sympy import Symbol, sqrt, Max
 from modulus.sym.hydra import to_absolute_path
 from modulus.sym.hydra import instantiate_arch
 from modulus.sym.hydra import ModulusConfig
