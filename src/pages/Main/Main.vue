@@ -10,13 +10,13 @@
       <div class="top" @click="back()"><i class="fa-solid fa-arrow-left arrow"></i>back</div>
       <el-popover placement="right" width="400" trigger="hover" close-delay="0">
         <div class="setting_list">
-          <div>Rec Validation Frequency</div><el-slider class="slider" v-model="hydraTemp.training.rec_validation_freq" :min="1" :max="100"></el-slider>
-          <div>Rec Inference Frequency</div><el-slider class="slider" v-model="hydraTemp.training.rec_inference_freq" :min="1" :max="100"></el-slider>
-          <div>Rec Monitor Frequency</div><el-slider class="slider" v-model="hydraTemp.training.rec_monitor_freq" :min="1" :max="100"></el-slider>
-          <div>Rec Constraint Frequency</div><el-slider class="slider" v-model="hydraTemp.training.rec_constraint_freq" :min="1" :max="100"></el-slider>
-          <div>Training Max Steps</div><el-slider class="slider" v-model="hydraTemp.training.max_steps" :min="500" :max="10000"></el-slider>
+          <div>Rec Validation Frequency</div><el-slider class="slider" v-model="hydraTemp.training.rec_validation_freq" :min="1000" :max="100000" :step="1000"></el-slider>
+          <div>Rec Inference Frequency</div><el-slider class="slider" v-model="hydraTemp.training.rec_inference_freq" :min="1000" :max="100000" :step="1000"></el-slider>
+          <div>Rec Monitor Frequency</div><el-slider class="slider" v-model="hydraTemp.training.rec_monitor_freq" :min="1000" :max="100000" :step="1000"></el-slider>
+          <div>Rec Constraint Frequency</div><el-slider class="slider" v-model="hydraTemp.training.rec_constraint_freq" :min="1000" :max="100000" :step="1000"></el-slider>
+          <div>Training Max Steps</div><el-slider class="slider" v-model="hydraTemp.training.max_steps" :min="2000" :max="2000000" :step="1000"></el-slider>
           <div>Decay Rate</div><el-slider class="slider" v-model="hydraTemp.scheduler.decay_rate" :min="0.01" :max="1.00" :step="0.01"></el-slider>
-          <div>Decay Steps</div><el-slider class="slider" v-model="hydraTemp.scheduler.decay_steps" :min="1" :max="100"></el-slider>
+          <div>Decay Steps</div><el-slider class="slider" v-model="hydraTemp.scheduler.decay_steps" :min="1000" :max="100000" :step="1000"></el-slider>
           <el-button type="primary" class="setBtn" :loading="isSending || isCreateCode || isCreateYaml" @click="collect('setting')">儲存</el-button>
         </div>
         <div class="setting" slot="reference"><i class="fa-solid fa-sliders"></i></div>
@@ -160,15 +160,15 @@ export default {
           scheduler: "tf_exponential_lr"
         },
         training: {
-          rec_validation_freq: 10,
-          rec_inference_freq: 10,
-          rec_monitor_freq: 10,
-          rec_constraint_freq: 50,
-          max_steps: 1500
+          rec_validation_freq: 1000,
+          rec_inference_freq: 1000,
+          rec_monitor_freq: 1000,
+          rec_constraint_freq: 1000,
+          max_steps: 2000
         },
         scheduler: {
           decay_rate: 0.95,
-          decay_steps: 15
+          decay_steps: 1000
         },
         run_mode: "train"
       },
@@ -176,7 +176,7 @@ export default {
       layout:[],
       orderedLayout:[],
       layout_values:{},
-      parameter:['Equations','Neural Network Architecture','Constraints','Nodes','Monitor'],
+      parameter:['Equations','Neural Network Architecture','Nodes','Constraints','Monitor'],
       parameter_type:'',
       parameter_selected:'',
       outputYaml:'',
@@ -555,7 +555,6 @@ export default {
       for(var i=0;i<this.geo.fileList.length;i++) formData.append('stlFiles', this.geo.fileList[i],this.geo.fileList[i].name); 
       
       formData.append('code',code);
-      formData.append('yaml',yaml);
 
       axios.post('/run/upload',formData,{
         headers:{
