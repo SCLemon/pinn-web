@@ -8,6 +8,19 @@
     </span>
     <div class="config" ref="config">
       <div class="top" @click="back()"><i class="fa-solid fa-arrow-left arrow"></i>back</div>
+      <el-popover placement="right" width="400" trigger="hover" close-delay="0">
+        <div class="setting_list">
+          <div>Rec Validation Frequency</div><el-slider class="slider" v-model="hydraTemp.training.rec_validation_freq" :min="1" :max="100"></el-slider>
+          <div>Rec Inference Frequency</div><el-slider class="slider" v-model="hydraTemp.training.rec_inference_freq" :min="1" :max="100"></el-slider>
+          <div>Rec Monitor Frequency</div><el-slider class="slider" v-model="hydraTemp.training.rec_monitor_freq" :min="1" :max="100"></el-slider>
+          <div>Rec Constraint Frequency</div><el-slider class="slider" v-model="hydraTemp.training.rec_constraint_freq" :min="1" :max="100"></el-slider>
+          <div>Training Max Steps</div><el-slider class="slider" v-model="hydraTemp.training.max_steps" :min="500" :max="10000"></el-slider>
+          <div>Decay Rate</div><el-slider class="slider" v-model="hydraTemp.scheduler.decay_rate" :min="0.01" :max="1.00" :step="0.01"></el-slider>
+          <div>Decay Steps</div><el-slider class="slider" v-model="hydraTemp.scheduler.decay_steps" :min="1" :max="100"></el-slider>
+          <el-button type="primary" class="setBtn" :loading="isSending || isCreateCode || isCreateYaml" @click="collect('setting')">儲存</el-button>
+        </div>
+        <div class="setting" slot="reference"><i class="fa-solid fa-sliders"></i></div>
+      </el-popover>
       <div class="geometry">
         <div class="title">Geometry  <div class="wireframe">WireFrame: <el-switch class="normalize_switch" v-model="geo.wireframe" active-color="#13ce66" @change="toggleWireFrame()"></el-switch></div></div>
         <div class="geo_subTitle">Mesh</div>
@@ -88,7 +101,7 @@
           </grid-item>
         </grid-layout>
       </div>
-      <el-button type="primary" class="send" @click="(!isSending && !isCreateCode && init>1)?send():''" :loading="isSending || isCreateCode">{{ isSending || isCreateCode?'資料建構中':'確認送出' }}</el-button>
+      <el-button type="primary" class="send" @click="(!isSending && !isCreateCode && !isCreateYaml && init>1)?send():''" :loading="isSending || isCreateCode || isCreateYaml">{{ isSending || isCreateCode || isCreateYaml?'資料建構中':'確認送出' }}</el-button>
     </div>
     <div class="content">
       <stl-viewer v-show="showType=='Preview'"></stl-viewer>
@@ -140,6 +153,25 @@ export default {
         fileList:[], // 文件呈現用
         fileDetail:[] // 文件輸出用
       },
+      hydraTemp:{
+        defaults: {
+          loss: "sum",
+          optimizer: "adam",
+          scheduler: "tf_exponential_lr"
+        },
+        training: {
+          rec_validation_freq: 10,
+          rec_inference_freq: 10,
+          rec_monitor_freq: 10,
+          rec_constraint_freq: 50,
+          max_steps: 1500
+        },
+        scheduler: {
+          decay_rate: 0.95,
+          decay_steps: 15
+        },
+        run_mode: "train"
+      },
       // functions block
       layout:[],
       orderedLayout:[],
@@ -147,29 +179,10 @@ export default {
       parameter:['Equations','Neural Network Architecture','Constraints','Nodes','Monitor'],
       parameter_type:'',
       parameter_selected:'',
-      // hydra
-      hydra: {
-          defaults: {
-            loss: "sum",
-            optimizer: "adam",
-            scheduler: "tf_exponential_lr"
-          },
-          training: {
-            rec_validation_freq: "10",
-            rec_inference_freq: "10",
-            rec_monitor_freq: "10",
-            rec_constraint_freq: "50",
-            max_steps: "1500"
-          },
-          scheduler: {
-            decay_rate: "0.95",
-            decay_steps: "15"
-          },
-          run_mode: "train"
-      },
       outputYaml:'',
       // output
       isCreateCode:false,
+      isCreateYaml:false,
       isSending:false,
       output:{},
       originalCode:'',
@@ -180,30 +193,52 @@ export default {
   },
   watch:{
     orderedLayout:{
+      immediate:false,
       handler() {
         if(this.init){ // 阻止第一次觸發
           this.collect();
         }
         this.init++;
       },
-      immediate:false
     },
     layout_values:{
+      deep:true,
       handler() {
         this.collect();
         this.init++;
       },
-      deep:true,
     },
     geo:{
+      deep:true,
       handler() {
         this.collect();
         this.init++;
       },
-      deep:true,
-    }
+    },
   },
   computed:{
+     // hydra
+     hydra() {
+      return {
+        defaults: {
+          loss: "sum",
+          optimizer: "adam",
+          scheduler: "tf_exponential_lr"
+        },
+        training: {
+          rec_validation_freq: (this.hydraTemp.training.rec_validation_freq).toString(),
+          rec_inference_freq: (this.hydraTemp.training.rec_inference_freq).toString(),
+          rec_monitor_freq: (this.hydraTemp.training.rec_monitor_freq).toString(),
+          rec_constraint_freq: (this.hydraTemp.training.rec_constraint_freq).toString(),
+          max_steps: (this.hydraTemp.training.max_steps).toString()
+        },
+        scheduler: {
+          decay_rate: (this.hydraTemp.scheduler.decay_rate).toString(),
+          decay_steps: (this.hydraTemp.scheduler.decay_steps).toString()
+        },
+        run_mode: "train"
+      }
+    },
     // functions block
     func_structure(){
       return structure.Functions
@@ -373,8 +408,9 @@ export default {
     },
 
     // 搜集參數配置
-    collect(){
-      this.isCreateCode =true;
+    collect(option){
+      this.isCreateCode = true;
+      this.isCreateYaml = true;
       // 重置輸出物件
       this.output = {
         normalize:{
@@ -457,7 +493,7 @@ export default {
         }
       })
       this.getPreviewCode();
-      this.getYaml();
+      this.getYaml(option);
     },
     // 獲取預覽程式碼
     getPreviewCode(){
@@ -484,14 +520,29 @@ export default {
       })
     },
     // 獲取 yaml 檔案
-    getYaml(){
+    getYaml(option){
       axios.post('/run/yaml',{
         json:JSON.stringify(this.output)
       })
       .then(res=>{
         this.outputYaml = res.data;
+        if(option == 'setting'){
+          this.$notify({
+            title: '訓練配置儲存提示',
+            message: '訓練配置儲存成功！',
+            type: 'success'
+          });
+        }
       })
-      .catch(e=>{})
+      .catch(e=>{
+        this.$notify.error({
+          title: '訓練配置儲存提示',
+          message: '訓練配置儲存失敗！',
+        });
+      })
+      .finally(()=>{
+        this.isCreateYaml = false;
+      })
     },
     // 發送代碼
     send(){
@@ -499,6 +550,7 @@ export default {
       const code = new File([this.originalCode], "main.py", { type: "text/plain" });
       const yaml = new File([this.outputYaml], "config.yaml", { type: "text/plain" });
       this.downloadFile(code); // 下載預覽程式碼
+      this.downloadFile(yaml)
       const formData = new FormData();
       for(var i=0;i<this.geo.fileList.length;i++) formData.append('stlFiles', this.geo.fileList[i],this.geo.fileList[i].name); 
       
@@ -559,6 +611,7 @@ export default {
     overflow-y: scroll;
     padding-left: 10px;
     padding-right: 10px;
+    position: relative;
   }
   .top{
     width: 25%;
@@ -566,6 +619,29 @@ export default {
     border-bottom: 1px solid rgba(210,210,210);
     line-height: 40px;
     font-size: 18px;
+  }
+  .setting{
+    width: 60px;
+    height: 40px;
+    line-height: 40px;
+    font-size: 18px;
+    position: absolute;
+    top:0;
+    right: 0;
+    text-align: center;
+  }
+  .setting:hover{
+    cursor: pointer;
+  }
+  .slider{
+    width: 95%;
+    margin: 0 auto;
+  }
+  .setBtn{
+    /* width: 100%;
+    margin: 0 auto; */
+    float: right;
+    margin-right: 2.5%;
   }
   .top{
     cursor: pointer;
