@@ -550,12 +550,11 @@ export default {
       const code = new File([this.originalCode], "main.py", { type: "text/plain" });
       const yaml = new File([this.outputYaml], "config.yaml", { type: "text/plain" });
       this.downloadFile(code); // 下載預覽程式碼
-      this.downloadFile(yaml)
       const formData = new FormData();
       for(var i=0;i<this.geo.fileList.length;i++) formData.append('stlFiles', this.geo.fileList[i],this.geo.fileList[i].name); 
       
       formData.append('code',code);
-
+      formData.append('yaml',yaml);
       axios.post('/run/upload',formData,{
         headers:{
           'Content-Type': 'multipart/form-data',
