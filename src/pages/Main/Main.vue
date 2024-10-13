@@ -47,7 +47,7 @@
         </div>
         <div class="geo_subTitle">Scale</div>
         <div class="scale">
-          factor: <el-input-number class="dimension_input" v-model="geo.factor" controls-position="right" :min="0" :step="0.1" @change="changeScale()"></el-input-number>
+          factor: <el-input-number class="dimension_input" v-model="geo.factor" controls-position="right" :min="0" :step="0.01" @change="changeScale()"></el-input-number>
         </div>
       </div>
       <div class="function_part">
@@ -506,27 +506,34 @@ export default {
       formData.append('yaml',yaml);
 
       axios.post('/run/upload',formData,{
-          headers:{
-            'Content-Type': 'multipart/form-data',
-            'user-token':jsCookie.get('token')
-          }
-        })
-        .then(res=>{
-          if(res.data == 'success') this.$router.replace('/list');
-          else this.$notify.error({
+        headers:{
+          'Content-Type': 'multipart/form-data',
+          'user-token':jsCookie.get('token')
+        }
+      })
+      .then(res=>{
+        if(res.data == 'success'){
+          this.$notify({
+            title: '專案發送提示',
+            message: '專案已發送至後端運行！',
+            type: 'success'
+          });
+          window.open('/#/list', '_blank');
+        }
+        else this.$notify.error({
             title: '系統提示',
             message: res.data,
           });
-        })
-        .catch(e=>{
+      })
+      .catch(e=>{
           this.$notify.error({
             title: '系統提示',
             message: '運行代碼失敗！',
           });
         })
-        .finally(()=>{
-          this.isSending = false;
-        })
+      .finally(()=>{
+        this.isSending = false;
+      })
     },
     downloadFile(file){ // File Object
       const link = document.createElement('a');
