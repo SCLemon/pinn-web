@@ -1,4 +1,5 @@
 import os
+import torch
 import modulus.sym
 import numpy as np
 from sympy import Symbol, sqrt, Max
