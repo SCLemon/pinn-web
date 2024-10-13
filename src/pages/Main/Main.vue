@@ -274,18 +274,26 @@ export default {
     //parameter block
     addItem(){
       if((this.parameter_type != 'Code Block' && (this.parameter_type == '' || this.parameter_selected == '')) || this.parameter_type =='') return
+
+      let lastY = 0;
+
+      if (this.layout.length > 0) {
+        const lastItem = this.layout[this.layout.length - 1];
+        lastY = lastItem.y + lastItem.h; // 最後一個項目的 y + h 得到新項目的起始 y
+      }
+
       if(this.parameter_type != 'Code Block'){
         var target =this.options[this.parameter_selected];
         this.layout.push({
           type:this.parameter_type,
-          "x":0,"y":0,"w":1,"h":target.property.length+1.25,"i":nanoid(),
+          "x":0,"y":lastY,"w":1,"h":target.property.length+1.25,"i":nanoid(),
           detail:target
         })
       }
       else{
         this.layout.push({
           type:this.parameter_type,
-          "x":0,"y":0,"w":1,"h":7.25,"i":nanoid(),
+          "x":0,"y":lastY,"w":1,"h":7.25,"i":nanoid(),
           detail:''
         })
       }
@@ -294,7 +302,7 @@ export default {
       this.$nextTick(()=>{
         var el = this.$refs.config;
         this.$nextTick(function(){
-          el.scrollTop = el.scrollHeight;
+          el.scrollTop = el.scrollHeight+50;
         })
       })
     },
