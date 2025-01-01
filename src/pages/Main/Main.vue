@@ -15,6 +15,7 @@
           <div>Rec Monitor Frequency</div><el-slider class="slider" v-model="hydraTemp.training.rec_monitor_freq" :min="1000" :max="100000" :step="1000"></el-slider>
           <div>Rec Constraint Frequency</div><el-slider class="slider" v-model="hydraTemp.training.rec_constraint_freq" :min="1000" :max="100000" :step="1000"></el-slider>
           <div>Training Max Steps</div><el-slider class="slider" v-model="hydraTemp.training.max_steps" :min="2000" :max="2000000" :step="1000"></el-slider>
+          <div>Learning Rates</div><el-input-number class="slider number" v-model="hydraTemp.optimizer.lr" :min="0.0000001" :max="0.1"></el-input-number>
           <div>Decay Rate</div><el-slider class="slider" v-model="hydraTemp.scheduler.decay_rate" :min="0.01" :max="1.00" :step="0.01"></el-slider>
           <div>Decay Steps</div><el-slider class="slider" v-model="hydraTemp.scheduler.decay_steps" :min="1000" :max="100000" :step="1000"></el-slider>
           <el-button type="primary" class="setBtn" :loading="isSending || isCreateCode || isCreateYaml" @click="collect('setting')">儲存</el-button>
@@ -170,6 +171,9 @@ export default {
           decay_rate: 0.95,
           decay_steps: 1000
         },
+        optimizer:{
+          lr:0.001
+        },
         run_mode: "train"
       },
       // functions block
@@ -235,6 +239,9 @@ export default {
         scheduler: {
           decay_rate: (this.hydraTemp.scheduler.decay_rate).toString(),
           decay_steps: (this.hydraTemp.scheduler.decay_steps).toString()
+        },
+        optimizer:{
+          lr:(this.hydraTemp.optimizer.lr).toString()
         },
         run_mode: "train"
       }
@@ -634,6 +641,10 @@ export default {
   .slider{
     width: 95%;
     margin: 0 auto;
+  }
+  .number{
+    margin-top: 5px;
+    margin-bottom: 5px;
   }
   .setBtn{
     /* width: 100%;

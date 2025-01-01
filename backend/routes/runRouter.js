@@ -4,11 +4,13 @@ const archiver = require('archiver');
 const { format } =require('date-fns');
 const multer = require('multer');
 const fileModel = require('../models/fileModel');
+const userModel = require('../models/userModel');
 const { exec,spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const nodemailer = require('nodemailer');
 
 // docker container
 const containerID = 'Container ID'
@@ -145,6 +147,7 @@ async function runModule(){
         await updateFileStatus(target.uuid, 'Ready');
         await replaceFile(target.uuid, target.name);
         await runModule();
+        sendMail(target)
     });
 }
 // 修改狀態 Running or Ready <-- 無需修改
@@ -263,4 +266,32 @@ router.get('/run/kill/:uuid',(req,res)=>{
         });
     }
 })
+
+// 寄發信件
+const mailConfig ={
+    service: 'Gmail',
+    auth: {
+        user: 'blc0000421@gmail.com', // Mail Account
+        pass: 'ujpmxjrnjhsymdar' // https://myaccount.google.com/apppasswords
+    }
+}
+
+function sendMail(target){
+    userModel.findOne({token:target.token})
+    .then(res=>{
+        const transporter = nodemailer.createTransport(mailConfig)
+        var str = 
+        `
+        <div> 您於 ${target.date} 進行的 ${target.name} 已於本平台執行完畢！ </div>
+        `
+        const mailOptions = {
+            to: res.mail,
+            subject: 'PINNs Platform - 專案運行結果通知',
+            html: str
+        }
+        transporter.sendMail(mailOptions, (err, info) => {})
+    })
+    .catch(()=>{})
+}
+
 module.exports = router;

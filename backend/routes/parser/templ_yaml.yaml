@@ -16,4 +16,7 @@ training:
   rec_constraint_freq: <<rec_constraint_freq>>
   max_steps: <<max_steps>>
 
+optimizer:
+  lr: <<lr>>
+  
 run_mode: <<run_mode>>
