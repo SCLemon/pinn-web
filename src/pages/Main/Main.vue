@@ -108,6 +108,9 @@
       <stl-viewer v-show="showType=='Preview'"></stl-viewer>
       <code-viewer v-show="showType=='Code'"></code-viewer>
     </div>
+    <div class="keyboard">
+      Ctrl+S 儲存專案   Ctrl+K 另存新檔 
+    </div>
   </div>
 </template>
 
@@ -130,17 +133,27 @@ export default {
   },
   mounted(){
     this.$bus.$on('setCenter',this.setCenter)
-    document.addEventListener('click', (event)=>{
-      if (event.target.tagName === 'INPUT') {
-        this.isDraggable = false
-      }
-      if (event.target.tagName === 'DIV') {
-        this.isDraggable = true;
-      }
-    });
+
+    if(this.$route.query.uuid) this.loadFullData(); // 若帶有 uuid 則汲取歷史資料
+
+    // 處理拖曳
+    document.addEventListener('click', this.handleDrag);
+    // 快捷儲存
+    document.addEventListener('keydown', this.handleKeydown);
+    // 檢查關閉瀏覽器
+    window.addEventListener('beforeunload', this.handleBeforeUnload);
+  },
+  beforeDestroy(){
+    // 解除綁定
+    document.removeEventListener('keydown',this.handleKeydown);
+    document.removeEventListener('click', this.handleDrag);
+    window.removeEventListener('beforeunload', this.handleBeforeUnload);
   },
   data(){
     return {
+      isSaved:false,
+      name:this.$route.query.name?this.$route.query.name:'',
+      uuid:this.$route.query.uuid?this.$route.query.uuid:nanoid(),
       init:0,
       showType:'Preview',
       // Geometry
@@ -221,8 +234,8 @@ export default {
     },
   },
   computed:{
-     // hydra
-     hydra() {
+    // hydra
+    hydra() {
       return {
         defaults: {
           loss: "sum",
@@ -284,8 +297,54 @@ export default {
     }
   },
   methods:{
+    handleBeforeUnload(event){
+      if (!this.isSaved) {
+        event.preventDefault();
+        event.returnValue = '';
+      }
+    },
+    handleKeydown(event){
+      if (event.ctrlKey && event.keyCode === 83) {
+        event.preventDefault();
+        this.saveFullData('檔案儲存');
+      }
+      else if (event.ctrlKey && event.keyCode === 75) {
+        event.preventDefault();
+        this.$prompt('请輸入專案名稱', '提示', {
+            confirmButtonText: '確認',
+            cancelButtonText: '取消',
+        })
+        .then(({ value }) => {
+          this.uuid = nanoid();
+          this.name = value;
+          this.saveFullData('另存新檔');
+        })
+        .catch((e) => {});
+      }
+    },
+    handleDrag(event){
+      if (event.target.tagName === 'INPUT') {
+        this.isDraggable = false
+      }
+      if (event.target.tagName === 'DIV') {
+        this.isDraggable = true;
+      }
+    },
     back(){
-      this.$router.replace('/gate').catch(()=>{});
+      // 確認是否儲存
+      if(!this.isSaved){
+        this.$confirm('離開前，是否儲存專案?', '提示', {
+          confirmButtonText: '確定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          this.saveFullData('儲存專案');
+        }).catch(() => {})
+        .finally(()=>{
+          this.$router.replace('/gate').catch(()=>{});
+        });
+      }
+      else this.$router.replace('/gate').catch(()=>{});
     },
     // geometry block
     tips(type,msg) {
@@ -416,6 +475,7 @@ export default {
 
     // 搜集參數配置
     collect(option){
+      this.isSaved = false;
       this.isCreateCode = true;
       this.isCreateYaml = true;
       // 重置輸出物件
@@ -562,7 +622,7 @@ export default {
       
       formData.append('code',code);
       formData.append('yaml',yaml);
-      axios.post('/run/upload',formData,{
+      axios.post(`/run/upload/${this.name}`,formData,{
         headers:{
           'Content-Type': 'multipart/form-data',
           'user-token':jsCookie.get('token')
@@ -598,6 +658,68 @@ export default {
       link.href = URL.createObjectURL(file);
       link.click();
       URL.revokeObjectURL(link.href);
+    },
+
+    // 儲存資料
+    saveFullData(type) {
+      const dataToSave = JSON.parse(JSON.stringify({
+        init:this.init,
+        hydraTemp:this.hydraTemp,
+        layout:this.layout,
+        orderedLayout:this.orderedLayout,
+        layout_values:this.layout_values,
+      }));
+      axios.post('/run/newTopic/add',{
+        uuid:this.uuid,
+        name:this.name,
+        data:dataToSave,
+      },
+      {
+        headers:{
+          token:jsCookie.get('token')
+        }
+      })
+      .then(res=>{
+        if(res.data=='success') {
+          this.$notify({
+            title: '專案儲存提示',
+            message: `${type}成功！`,
+            type: 'success'
+          });
+        }
+        else{
+          this.$notify({
+            title: '專案儲存提示',
+            message: `${type}失敗！`,
+            type: 'error'
+          });
+        }
+        this.isSaved = true;
+      })
+      .catch(e=>{
+        this.$notify({
+          title: '專案儲存提示',
+          message: `${type}失敗！`,
+          type: 'error'
+        });
+      })
+    },
+    // 獲取歷史資料
+    loadFullData(){
+      axios.get(`/run/newTopic/findProject/${this.uuid}`,{
+        headers:{
+          token:jsCookie.get('token')
+        }
+      }).then(res=>{
+        this.name = res.data.name;
+        const loadedData = JSON.parse(res.data.data);
+        Object.keys(loadedData).forEach((key) => {
+        if (this.$data.hasOwnProperty(key)) {
+            this[key] = loadedData[key];
+          }
+        });
+      })
+      .catch(e=>{})
     }
   }
 }
@@ -851,5 +973,11 @@ export default {
     margin-bottom: 20px;
     margin-left: 10px;
     margin-top: 10px;
+  }
+  .keyboard{
+    position: fixed;
+    bottom: 10px;
+    right:15px;
+    color: gray;
   }
 </style>

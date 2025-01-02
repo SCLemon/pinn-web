@@ -1,8 +1,20 @@
 <template>
   <div class="main" ref="main">
+    <el-dialog title="歷史紀錄" :visible.sync="dialogTableVisible" width="80%">
+      <el-table :data="gridData" empty-text="暫無數據">
+        <el-table-column property="date" label="更新時間" width="400"></el-table-column>
+        <el-table-column property="name" label="專案名稱" width="400"></el-table-column>
+        <el-table-column label="項目操作" width="400">
+          <template slot-scope="{row}">
+            <el-button @click="editProject(row.uuid)">編輯專案</el-button>
+            <el-button type="danger" @click="deleteProject(row.uuid)">刪除專案</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
     <div class="title">Welcome To Use PINNs Analyzer <div class="out" @click="logout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Log Out</div></div>
     <div class="blocks">
-      <div class="blk1 block" @click="go('/main')">
+      <div class="blk1 block" @click="handleNewTopic()">
         <div class="img img1"></div>
         <div class="text">New Topic</div>
       </div>
@@ -19,6 +31,7 @@
 </template>
 
 <script>
+import axios from 'axios';
 import jsCookie from 'js-cookie';
 import NET from 'vanta/dist/vanta.net.min'
 export default {
@@ -34,10 +47,65 @@ export default {
           scale: 1.00,
           scaleMobile: 1.00
       })
+      this.getData();
+    },
+    data(){
+      return{
+        gridData: [],
+        dialogTableVisible: false,
+      }
     },
     methods:{
-      go(path){
-        this.$router.replace(path).catch(()=>{})
+      go(path,query){
+        console.log(query)
+        this.$router.replace({
+          path: path, 
+          query: query?query:{}
+        }).catch(()=>{})
+      },
+      getData(){
+        axios.get(`/run/newTopic/find/${jsCookie.get('token')}`)
+        .then(res=>{
+          if(res.data && res.data.list.length) this.gridData = res.data.list
+          else this.gridData = []
+        })
+      },
+      handleNewTopic(){
+        this.$confirm('請選擇是否創建新專案?', '提示', {
+          confirmButtonText: '創建專案',
+          cancelButtonText: '歷史紀錄',
+          distinguishCancelAndClose:true,
+          type: 'warning',
+        })
+        .then(() => {
+          this.$prompt('请輸入專案名稱', '提示', {
+            confirmButtonText: '確認',
+            cancelButtonText: '取消',
+          })
+          .then(({ value }) => {
+            this.go('/main',{name:value})
+          })
+          .catch(() => {});
+        })
+        .catch((type) => {
+          if(type=='cancel') this.dialogTableVisible = true;
+        });
+      },
+      editProject(uuid){
+        this.go('/main',{uuid:uuid})
+      },
+      deleteProject(uuid){
+        this.$confirm('確認刪除專案?', '提示', {
+          confirmButtonText: '確定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          axios.delete(`/run/newTopic/delete/${uuid}`,{
+          headers:{token:jsCookie.get('token')}})
+          .then(res=>{})
+          .catch(e=>{})
+          .finally(()=>{this.getData();})
+        }).catch(() => {});
       },
       logout(){
         this.$confirm('確認登出?', '提示', {

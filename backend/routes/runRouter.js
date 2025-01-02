@@ -47,7 +47,7 @@ router.post('/run/yaml',(req, res) => {
 
 // Step 2. 資料建立
 const upload = multer();
-router.post('/run/upload',upload.fields([
+router.post('/run/upload/:name',upload.fields([
     { name: 'stlFiles', maxCount: 50 },
     { name: 'code', maxCount: 1 },
     { name: 'yaml', maxCount: 1 }
@@ -79,13 +79,13 @@ router.post('/run/upload',upload.fields([
     // })
     /* 覆蓋 main.py 結束 */
 
-    var name = `${format(new Date(),'HHmm')}_project`;
+    var name = req.params.name;
     try {
         fileModel.create({
             token:token,
             uuid:uuid,
             name:name,
-            date: format(new Date(),'yyyy/MM/dd'),
+            date: format(new Date(),'yyyy/MM/dd HH:mm:ss'),
             status:'Queuing',
             inputRoute:fPath,
             outputName: '',

@@ -21,6 +21,10 @@ app.use(runRouter);
 const verifyRouter = require('./routes/verifyRouter');
 app.use(verifyRouter);
 
+// newTopic router
+const newTopicRouter = require('./routes/newTopicRouter');
+app.use(newTopicRouter);
+
 app.listen(3999,()=>{
     console.log('server is running on port 3999')
 })
