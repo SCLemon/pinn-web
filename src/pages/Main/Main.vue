@@ -8,7 +8,7 @@
     </span>
     <div class="config" ref="config">
       <div class="top" @click="back()"><i class="fa-solid fa-arrow-left arrow"></i>back</div>
-      <el-popover placement="right" width="400" trigger="hover" close-delay="0">
+      <el-popover placement="right" width="400" trigger="hover" :closeDelay="0">
         <div class="setting_list">
           <div>Rec Validation Frequency</div><el-slider class="slider" v-model="hydraTemp.training.rec_validation_freq" :min="1000" :max="100000" :step="1000"></el-slider>
           <div>Rec Inference Frequency</div><el-slider class="slider" v-model="hydraTemp.training.rec_inference_freq" :min="1000" :max="100000" :step="1000"></el-slider>
@@ -27,7 +27,7 @@
         <div class="geo_subTitle">Mesh</div>
         <div class="mesh">
           <el-upload
-            class="upload" action="" accept=".stl" :http-request="handleUpload" :on-remove="handleRemove" :on-preview="handlePreview"
+            class="upload" action="" accept=".stl" :http-request="handleUpload1" :on-remove="handleRemove" :on-preview="handlePreview"
             multiple :file-list="geo.fileList"  drag>
             <i class="el-icon-upload"></i>
             <div class="el-upload__text">將文件拖到此處，或<em>點擊上傳</em></div>
@@ -109,7 +109,7 @@
       <code-viewer v-show="showType=='Code'"></code-viewer>
     </div>
     <div class="keyboard">
-      <el-button icon="el-icon-check" @click="ctrlS()" circle></el-button> Ctrl+S 儲存專案 <el-button icon="el-icon-edit" @click="ctrlN()" circle></el-button>  Ctrl+N 另存新檔 <el-button icon="el-icon-download" @click="ctrlD()" circle></el-button> Ctrl+D 下載代碼
+      <el-button class="key" icon="el-icon-check" @click="ctrlS()" circle></el-button> Ctrl+S 儲存專案 <el-button class="key" icon="el-icon-edit" @click="ctrlN()" circle></el-button>  Ctrl+N 另存新檔 <el-button class="key" icon="el-icon-download" @click="ctrlD()" circle></el-button> Ctrl+D 下載代碼
     </div>
   </div>
 </template>
@@ -151,13 +151,15 @@ export default {
   },
   data(){
     return {
-      isSaved:false,
+      isSaved:false, // 是否儲存
+      stlFileChange: false, // stl 檔案是否更動
       isOpenedPage:null, // 判斷是否已開啟 List Page
       name:this.$route.query.name?this.$route.query.name:'',
       uuid:this.$route.query.uuid?this.$route.query.uuid:nanoid(),
       init:0,
       showType:'Preview',
       // Geometry
+      tempFileDetail:{},
       geo:{
         wireframe:true,
         factor:1,
@@ -463,9 +465,9 @@ export default {
     handleTab(event){
       if (event.key === 'Tab') event.preventDefault();
     },
-
     // STL 文件處理
-    handleUpload(file){
+    handleUpload1(file){ // 手動
+      this.stlFileChange = true;
       var file = file.file
       this.geo.fileList.push(file);
       this.geo.fileDetail.push({ // 新增至文件輸出列表
@@ -474,13 +476,30 @@ export default {
         name:'',
         airtight:"True",
       })
-      this.$bus.$emit('loadStlFile',file,{
+      this.$bus.$emit('loadStlFile1',file,{
         wireframe:this.geo.wireframe,
         center_normalize:this.geo.pos_normalize,
         factor:this.geo.factor,
+        uid: file.uid
+      })
+    },
+    handleUpload2(file,data){ // 自動
+      this.geo.fileList.push(file);
+      this.geo.fileDetail.push({ // 新增至文件輸出列表
+        uid:file.uid,
+        file:file,
+        name:'',
+        airtight:"True",
+      })
+      this.$bus.$emit('loadStlFile2',data,{
+        wireframe:this.geo.wireframe,
+        center_normalize:this.geo.pos_normalize,
+        factor:this.geo.factor,
+        uid: file.uid
       })
     },
     handleRemove(file, fileList) {
+      this.stlFileChange = true;
       this.geo.fileList = fileList
       this.$bus.$emit('removeStlFile',file.uid);
       this.geo.fileDetail = this.geo.fileDetail.filter(obj=> obj.uid != file.uid); // 移除文件輸出列表
@@ -690,6 +709,7 @@ export default {
     saveFullData(type) {
       const dataToSave = JSON.parse(JSON.stringify({
         init:this.init,
+        geo:this.geo,
         hydraTemp:this.hydraTemp,
         layout:this.layout,
         orderedLayout:this.orderedLayout,
@@ -729,6 +749,8 @@ export default {
           type: 'error'
         });
       })
+      
+      this.saveFiles();
     },
     // 獲取歷史資料
     loadFullData(){
@@ -741,12 +763,56 @@ export default {
         const loadedData = JSON.parse(res.data.data);
         Object.keys(loadedData).forEach((key) => {
         if (this.$data.hasOwnProperty(key)) {
-            this[key] = loadedData[key];
+            if(key != 'geo') this[key] = loadedData[key];
+            else this.tempFileDetail = loadedData[key]['fileDetail'];
           }
         });
       })
       .catch(e=>{})
-    }
+      this.getFiles();
+    },
+
+    // 獲取上傳文件
+    getFiles(){
+      axios.get(`/run/newTopic/getFiles/${this.uuid}`,{
+        headers:{
+          'token':jsCookie.get('token')
+        }
+      })
+      .then(res=>{
+        if(res.data && res.data.files && res.data.files.length){
+          const files = res.data.files;
+          files.forEach((file) => {
+            var newFile = new File([new Blob([file.file.data], { type: file.contentType })], file.filename, { type: file.contentType });
+            newFile.uid = new Date().getTime();
+            this.handleUpload2(newFile,file.file.data);
+          });
+          this.$nextTick(()=>{
+            this.tempFileDetail.forEach((item,index)=>{
+              this.geo.fileDetail[index].name = item.name
+              this.geo.fileDetail[index].airtight = item.airtight
+            })
+          })
+        }
+      })
+      .catch(e=>{})
+    },
+
+    // 儲存上傳文件
+    saveFiles(){
+      if(!this.stlFileChange) return
+      var formData = new FormData();
+      for (let i = 0; i < this.geo.fileList.length; i++) {
+        formData.append('files[]', this.geo.fileList[i]);
+      }
+      axios.post(`/run/newTopic/addFiles/${this.uuid}`,formData,{
+        headers:{
+          'token':jsCookie.get('token')
+        }
+      })
+      .then(res=>{})
+      .catch(e=>{})
+    },
   }
 }
 </script>
@@ -755,6 +821,10 @@ export default {
   .main{
     display: flex;
     justify-content: space-evenly;
+  }
+  .key{
+    background: transparent;
+    color: gray;
   }
   /* 左列樣式 */
   .config{

@@ -31,7 +31,8 @@ export default {
         },
     },
     mounted(){
-        this.$bus.$on('loadStlFile',this.loadFile);
+        this.$bus.$on('loadStlFile1',this.loadFile1);
+        this.$bus.$on('loadStlFile2',this.loadFile2);
         this.$bus.$on('removeStlFile',this.removeMesh);
         this.$bus.$on('handleStlConfig',this.handleConfig);
         this.$bus.$on('getStlCenter',this.getCenter)
@@ -140,9 +141,8 @@ export default {
             }
             this.getCenter();
         },
-        // 添加物件
-        loadFile(file,config){
-            if(!file.name.includes('.stl')) return;
+        // 添加物件（手動）
+        loadFile1(file,config){
             const reader = new FileReader();
             reader.onload = (e) => {
                 const contents = e.target.result;
@@ -158,6 +158,33 @@ export default {
             };
             reader.readAsArrayBuffer(file);
         },
+        // 添加物件（自動）
+        loadFile2(file,config){
+            try {
+                const byteArray = file;
+                const arrayBuffer = new ArrayBuffer(byteArray.length);
+                const view = new Uint8Array(arrayBuffer);
+                view.set(byteArray);
+                const loader = new STLLoader();  // STL 解析器
+                const geometry = loader.parse(arrayBuffer);  // 解析 STL 文件
+                const material = new THREE.MeshPhongMaterial({
+                    color: 0x606060, specular: 0x111111, shininess: 200, wireframe: config.wireframe
+                });
+
+                // 建立 Mesh 物件並加入場景
+                this.mesh = new THREE.Mesh(geometry, material);
+                this.mesh.name = config.uid;  // 設定 Mesh 名稱
+                    
+                this.scene.add(this.mesh);  // 加入場景
+                this.getCenter(config.pos_normalize);  // 計算物體的中心點
+            
+            } catch (error) {
+                this.$notify.error({
+                    title: 'STL 顯示錯誤',
+                    message: '客戶端瀏覽器內存空間不足，但仍可以進行資料傳送及運算。'
+                });
+            }
+        }
     }
 }
 </script>
