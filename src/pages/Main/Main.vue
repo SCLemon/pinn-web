@@ -50,9 +50,9 @@
         <div class="geo_subTitle">Center</div>
         <div class="center">
           <div class="pos-box">
-            <div class="pos">x: <el-input class="pos-input" v-model="geo.pos.x" placeholder="请输入内容"></el-input></div>
-            <div class="pos">y: <el-input class="pos-input" v-model="geo.pos.y" placeholder="请输入内容"></el-input></div>
-            <div class="pos">z: <el-input class="pos-input" v-model="geo.pos.z" placeholder="请输入内容"></el-input></div>
+            <div class="pos">x: <el-input class="pos-input" v-model="geo.pos.x" placeholder="请輸入内容"></el-input></div>
+            <div class="pos">y: <el-input class="pos-input" v-model="geo.pos.y" placeholder="请輸入内容"></el-input></div>
+            <div class="pos">z: <el-input class="pos-input" v-model="geo.pos.z" placeholder="请輸入内容"></el-input></div>
           </div>
           <div class="pos_exec">
             Normalize:<el-switch class="normalize_switch" v-model="geo.pos_normalize" active-color="#13ce66"></el-switch>
@@ -109,7 +109,7 @@
       <code-viewer v-show="showType=='Code'"></code-viewer>
     </div>
     <div class="keyboard">
-      Ctrl+S 儲存專案   Ctrl+K 另存新檔 
+      <el-button icon="el-icon-check" @click="ctrlS()" circle></el-button> Ctrl+S 儲存專案 <el-button icon="el-icon-edit" @click="ctrlN()" circle></el-button>  Ctrl+N 另存新檔 <el-button icon="el-icon-download" @click="ctrlD()" circle></el-button> Ctrl+D 下載代碼
     </div>
   </div>
 </template>
@@ -152,6 +152,7 @@ export default {
   data(){
     return {
       isSaved:false,
+      isOpenedPage:null, // 判斷是否已開啟 List Page
       name:this.$route.query.name?this.$route.query.name:'',
       uuid:this.$route.query.uuid?this.$route.query.uuid:nanoid(),
       init:0,
@@ -297,37 +298,19 @@ export default {
     }
   },
   methods:{
-    handleBeforeUnload(event){
-      if (!this.isSaved) {
-        event.preventDefault();
-        event.returnValue = '';
-      }
-    },
-    handleKeydown(event){
-      if (event.ctrlKey && event.keyCode === 83) {
-        event.preventDefault();
-        this.saveFullData('檔案儲存');
-      }
-      else if (event.ctrlKey && event.keyCode === 75) {
-        event.preventDefault();
-        this.$prompt('请輸入專案名稱', '提示', {
-            confirmButtonText: '確認',
-            cancelButtonText: '取消',
-        })
-        .then(({ value }) => {
-          this.uuid = nanoid();
-          this.name = value;
-          this.saveFullData('另存新檔');
-        })
-        .catch((e) => {});
-      }
-    },
     handleDrag(event){
       if (event.target.tagName === 'INPUT') {
         this.isDraggable = false
       }
       if (event.target.tagName === 'DIV') {
         this.isDraggable = true;
+      }
+    },
+    // 離開前檢測
+    handleBeforeUnload(event){
+      if (!this.isSaved) {
+        event.preventDefault();
+        event.returnValue = '';
       }
     },
     back(){
@@ -345,6 +328,39 @@ export default {
         });
       }
       else this.$router.replace('/gate').catch(()=>{});
+    },
+    // 監聽按鍵事件
+    handleKeydown(event){
+      if (event.ctrlKey && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        this.ctrlS();
+      }
+      else if (event.ctrlKey && event.key.toLowerCase() === 'n') {
+        event.preventDefault();
+        this.ctrlN();
+      }
+      else if (event.ctrlKey && event.key.toLowerCase() === 'd'){
+        event.preventDefault();
+        this.ctrlD();
+      }
+    },
+    ctrlS(){ 
+      this.saveFullData('檔案儲存');
+    },
+    ctrlN(){
+      this.$prompt('请輸入專案名稱', '提示', {
+          confirmButtonText: '確認',
+          cancelButtonText: '取消',
+      })
+      .then(({ value }) => {
+        this.uuid = nanoid();
+        this.name = value;
+        this.saveFullData('另存新檔');
+      })
+      .catch((e) => {});
+    },
+    ctrlD(){
+      this.execDownload();
     },
     // geometry block
     tips(type,msg) {
@@ -492,7 +508,7 @@ export default {
 
       this.output.normalize.do = this.geo.pos_normalize;
       this.output.normalize.scale = this.geo.factor;
-      this.output.normalize.center = [this.geo.pos.x,this.geo.pos.y,this.geo.pos.z];
+      this.output.normalize.center = [Number(this.geo.pos.x),Number(this.geo.pos.y),Number(this.geo.pos.z)];
       this.output.hydra = this.hydra;
 
       // mesh stl
@@ -616,7 +632,6 @@ export default {
       this.isSending = true;
       const code = new File([this.originalCode], "main.py", { type: "text/plain" });
       const yaml = new File([this.outputYaml], "config.yaml", { type: "text/plain" });
-      this.downloadFile(code); // 下載預覽程式碼
       const formData = new FormData();
       for(var i=0;i<this.geo.fileList.length;i++) formData.append('stlFiles', this.geo.fileList[i],this.geo.fileList[i].name); 
       
@@ -635,7 +650,7 @@ export default {
             message: '專案已發送至後端運行！',
             type: 'success'
           });
-          window.open('/#/list', '_blank');
+          this.openListPage();
         }
         else this.$notify.error({
             title: '系統提示',
@@ -652,6 +667,18 @@ export default {
         this.isSending = false;
       })
     },
+    openListPage(){
+      if(!this.isOpenedPage || this.isOpenedPage.closed){
+        this.isOpenedPage = window.open('/#/list', '_blank');
+      }
+    },
+    // 下載預覽程式碼
+    execDownload(){
+      const code = new File([this.originalCode], "main.py", { type: "text/plain" });
+      const yaml = new File([this.outputYaml], "config.yaml", { type: "text/plain" });
+      this.downloadFile(code);
+      this.downloadFile(yaml);
+    },
     downloadFile(file){ // File Object
       const link = document.createElement('a');
       link.download = file.name;
@@ -659,7 +686,6 @@ export default {
       link.click();
       URL.revokeObjectURL(link.href);
     },
-
     // 儲存資料
     saveFullData(type) {
       const dataToSave = JSON.parse(JSON.stringify({

@@ -119,7 +119,7 @@ function saveFiles(files,src,uuid){
 }
 // Step 3. 執行 python module
 var currentProcess = 0;
-var process = {}; // 執行緒
+var child = {}; // 當前運行執行緒
 async function runModule(){
     const res = await fileModel.findOne({done:false})
     if(res == null){
@@ -135,14 +135,14 @@ async function runModule(){
     await updateFileStatus(target.uuid,'Running');
     const command = 'docker';
     const args = ['exec', containerID, 'python', `modulus-sym/examples/${res.uuid}/${res.uuid}.py`];
-    process = spawn(command, args);
-    process.stdout.on('data', (data) => {
+    child = spawn(command, args);
+    child.stdout.on('data', (data) => {
         console.log(`stdout: ${data}`);
     });
-    process.stderr.on('data', (data) => {
+    child.stderr.on('data', (data) => {
         console.error(`stderr: ${data}`);
     });
-    process.on('close', async (code) => {
+    child.on('close', async (code) => {
         console.log(`child process exited with code ${code}`);
         await updateFileStatus(target.uuid, 'Ready');
         await replaceFile(target.uuid, target.name);
@@ -249,14 +249,20 @@ router.get('/run/findAll', async (req, res) => {
     }
 });
 
+// 停止運行
 router.get('/run/kill/:uuid',(req,res)=>{
     var uuid = req.params.uuid;
-
     if(currentProcess == uuid){
-        process.kill();
-        res.send({
-            type:'success',
-            message:'執行緒已中止！'
+        child.kill('SIGTERM');
+        exec(`docker top ${containerID} | grep "${uuid}.py" | awk '{print $2}'`, (error, stdout, stderr) => {
+            const pid = stdout.trim();
+            // 進一步終止進程
+            exec(`kill -9 ${pid}`, (killError) => {
+                res.send({
+                    type:'success',
+                    message:'執行緒已中止！'
+                });
+            });
         });
     }
     else{
@@ -265,6 +271,8 @@ router.get('/run/kill/:uuid',(req,res)=>{
             message:'執行緒中止失敗！'
         });
     }
+    currentProcess = 0;
+    child = {};
 })
 
 // 寄發信件
