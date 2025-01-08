@@ -230,4 +230,41 @@ router.get('/run/newTopic/getFiles/:uuid', (req, res) => {
   .catch((err) => {return res.send({type: 'error',message: 'Failed to find file IDs in database'});});
 });
 
+// 刪除資料集 - 1
+router.delete('/run/newTopic/deleteAllFiles/:uuid',(req,res)=>{
+  const bucket = new GridFSBucket(getDb(), { bucketName: 'stlFiles' });
+  var token = req.headers['token'];
+  var uuid = req.params.uuid;
+  stlModel.findOne({ token: token, uuid: uuid })
+  .then((data) => {
+    if (data && data.fieldIds && data.fieldIds.length !== 0){
+      const fieldIds = data.fieldIds;
+      var deletePromise = fieldIds.map((fileId) => {
+        return new Promise((resolve, reject) => {
+          bucket.delete(fileId, (err) => {})
+          .catch((e)=>{}).finally(()=>{resolve()});
+        });
+      });
+  
+      Promise.all(deletePromise)
+      .then(()=>{
+        deleteData(req,res)
+      })
+    }
+    else deleteData(req,res)
+  });
+})
+
+// 刪除資料集 - 2
+function deleteData(req,res){
+  var token = req.headers['token'];
+  var uuid = req.params.uuid;
+  stlModel.findOneAndDelete({ token: token, uuid: uuid })
+  .then((data,err)=>{
+    res.send('success')
+  })
+  .catch(e=>{
+    res.send('error')
+  })
+}
 module.exports = router;

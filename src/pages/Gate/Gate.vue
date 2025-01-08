@@ -57,7 +57,6 @@ export default {
     },
     methods:{
       go(path,query){
-        console.log(query)
         this.$router.replace({
           path: path, 
           query: query?query:{}
@@ -100,11 +99,18 @@ export default {
           cancelButtonText: '取消',
           type: 'warning'
         }).then(() => {
+
           axios.delete(`/run/newTopic/delete/${uuid}`,{
           headers:{token:jsCookie.get('token')}})
           .then(res=>{})
           .catch(e=>{})
           .finally(()=>{this.getData();})
+
+          axios.delete(`/run/newTopic/deleteAllFiles/${uuid}`,{
+          headers:{'token':jsCookie.get('token')}})
+          .then(res=>{})
+          .catch(e=>{})
+
         }).catch(() => {});
       },
       logout(){

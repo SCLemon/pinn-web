@@ -183,6 +183,10 @@ export default {
                     title: 'STL 顯示錯誤',
                     message: '客戶端瀏覽器內存空間不足，但仍可以進行資料傳送及運算。'
                 });
+                this.$notify.error({
+                    title: 'STL 錯誤解決方案',
+                    message: '請手動清除 STL 檔案並重新上傳新文件即可。'
+                });
             }
         }
     }

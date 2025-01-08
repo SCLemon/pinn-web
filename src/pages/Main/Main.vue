@@ -319,15 +319,18 @@ export default {
       // 確認是否儲存
       if(!this.isSaved){
         this.$confirm('離開前，是否儲存專案?', '提示', {
-          confirmButtonText: '確定',
-          cancelButtonText: '取消',
+          confirmButtonText: '儲存',
+          cancelButtonText: '不儲存',
+          distinguishCancelAndClose:true,
           type: 'warning'
         }).then(() => {
           this.saveFullData('儲存專案');
-        }).catch(() => {})
-        .finally(()=>{
           this.$router.replace('/gate').catch(()=>{});
-        });
+        }).catch((type) => {
+          console.log(type)
+          if(type == 'close'){}
+          else this.$router.replace('/gate').catch(()=>{});
+        })
       }
       else this.$router.replace('/gate').catch(()=>{});
     },
@@ -788,9 +791,9 @@ export default {
             this.handleUpload2(newFile,file.file.data);
           });
           this.$nextTick(()=>{
-            this.tempFileDetail.forEach((item,index)=>{
-              this.geo.fileDetail[index].name = item.name
-              this.geo.fileDetail[index].airtight = item.airtight
+            this.geo.fileDetail.forEach((item,index)=>{
+              this.geo.fileDetail[index].name = this.tempFileDetail[index].name;
+              this.geo.fileDetail[index].airtight = this.tempFileDetail[index].airtight
             })
           })
         }
@@ -800,18 +803,62 @@ export default {
 
     // 儲存上傳文件
     saveFiles(){
-      if(!this.stlFileChange) return
-      var formData = new FormData();
+      if(!this.stlFileChange){
+        this.$notify({
+          title: 'STL文件儲存提示',
+          message: `STL 文件儲存無更動。`,
+          type: 'warning'
+        });
+        return
+      }
+      let formData = new FormData();
+      let totalFileSize = 0;
+      const SINGLE_MAX = 10*1024*1024;
+      const TOTAL_MAX = 30*1024*1024
       for (let i = 0; i < this.geo.fileList.length; i++) {
-        formData.append('files[]', this.geo.fileList[i]);
+        let file = this.geo.fileList[i];
+        if(file.size > SINGLE_MAX){
+          formData = null;
+          this.$notify({
+            title: 'STL文件儲存提示',
+            message: `單個 STL 檔案大小超過 10 MB，故本次不進行儲存。`,
+            type: 'error'
+          });
+          return;
+        }
+        else {
+          totalFileSize += file.size;
+          if(totalFileSize > TOTAL_MAX){
+            formData = null
+            this.$notify({
+              title: 'STL文件儲存提示',
+              message: `STL 檔案大小總計超過 30 MB，故本次不進行儲存。`,
+              type: 'error'
+            });
+            return;
+          }
+          else formData.append('files[]',file); 
+        }
       }
       axios.post(`/run/newTopic/addFiles/${this.uuid}`,formData,{
         headers:{
           'token':jsCookie.get('token')
         }
       })
-      .then(res=>{})
-      .catch(e=>{})
+      .then(res=>{
+        this.$notify({
+            title: 'STL文件儲存提示',
+            message: `STL 檔案儲存成功。`,
+            type: 'success'
+        });
+      })
+      .catch(e=>{
+        this.$notify({
+            title: 'STL文件儲存提示',
+            message: `STL 檔案儲存失敗。`,
+            type: 'error'
+        });
+      })
     },
   }
 }
