@@ -779,6 +779,7 @@ export default {
                 const fileObject = new File([fileBlob], filename, {
                   type: fileBlob.type,
                 });
+                fileObject.uid = new Date().getTime();
                 this.handleUpload(fileObject); // 上传处理
               });
             });
