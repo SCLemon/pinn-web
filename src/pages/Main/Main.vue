@@ -27,7 +27,7 @@
         <div class="geo_subTitle">Mesh</div>
         <div class="mesh">
           <el-upload
-            class="upload" action="" accept=".stl" :http-request="handleUpload1" :on-remove="handleRemove" :on-preview="handlePreview"
+            class="upload" action="" accept=".stl" :http-request="handleUpload" :on-remove="handleRemove" :on-preview="handlePreview"
             multiple :file-list="geo.fileList"  drag>
             <i class="el-icon-upload"></i>
             <div class="el-upload__text">將文件拖到此處，或<em>點擊上傳</em></div>
@@ -124,6 +124,7 @@ import { nanoid } from 'nanoid'
 import 'highlight.js/styles/atom-one-dark.css';
 import axios from 'axios';
 import jsCookie from 'js-cookie';
+import JSZip from 'jszip';
 export default {
   name:'Main',
   components:{
@@ -152,14 +153,13 @@ export default {
   data(){
     return {
       isSaved:false, // 是否儲存
-      stlFileChange: false, // stl 檔案是否更動
       isOpenedPage:null, // 判斷是否已開啟 List Page
       name:this.$route.query.name?this.$route.query.name:'',
       uuid:this.$route.query.uuid?this.$route.query.uuid:nanoid(),
       init:0,
       showType:'Preview',
       // Geometry
-      tempFileDetail:{},
+      tempGeo:{},
       geo:{
         wireframe:true,
         factor:1,
@@ -469,9 +469,8 @@ export default {
       if (event.key === 'Tab') event.preventDefault();
     },
     // STL 文件處理
-    handleUpload1(file){ // 手動
-      this.stlFileChange = true;
-      var file = file.file
+    handleUpload(file){
+      var file = file.file || file
       this.geo.fileList.push(file);
       this.geo.fileDetail.push({ // 新增至文件輸出列表
         uid:file.uid,
@@ -479,22 +478,7 @@ export default {
         name:'',
         airtight:"True",
       })
-      this.$bus.$emit('loadStlFile1',file,{
-        wireframe:this.geo.wireframe,
-        center_normalize:this.geo.pos_normalize,
-        factor:this.geo.factor,
-        uid: file.uid
-      })
-    },
-    handleUpload2(file,data){ // 自動
-      this.geo.fileList.push(file);
-      this.geo.fileDetail.push({ // 新增至文件輸出列表
-        uid:file.uid,
-        file:file,
-        name:'',
-        airtight:"True",
-      })
-      this.$bus.$emit('loadStlFile2',data,{
+      this.$bus.$emit('loadStlFile',file,{
         wireframe:this.geo.wireframe,
         center_normalize:this.geo.pos_normalize,
         factor:this.geo.factor,
@@ -656,7 +640,6 @@ export default {
       const yaml = new File([this.outputYaml], "config.yaml", { type: "text/plain" });
       const formData = new FormData();
       for(var i=0;i<this.geo.fileList.length;i++) formData.append('stlFiles', this.geo.fileList[i],this.geo.fileList[i].name); 
-      
       formData.append('code',code);
       formData.append('yaml',yaml);
       axios.post(`/run/upload/${this.name}`,formData,{
@@ -765,14 +748,16 @@ export default {
         this.name = res.data.name;
         const loadedData = JSON.parse(res.data.data);
         Object.keys(loadedData).forEach((key) => {
-        if (this.$data.hasOwnProperty(key)) {
+          if (this.$data.hasOwnProperty(key)) {
             if(key != 'geo') this[key] = loadedData[key];
-            else this.tempFileDetail = loadedData[key]['fileDetail'];
+            else this.tempGeo = loadedData[key];
           }
         });
+        this.$nextTick(()=>{
+          this.getFiles();
+        })
       })
       .catch(e=>{})
-      this.getFiles();
     },
 
     // 獲取上傳文件
@@ -780,22 +765,39 @@ export default {
       axios.get(`/run/newTopic/getFiles/${this.uuid}`,{
         headers:{
           'token':jsCookie.get('token')
-        }
+        },
+        responseType: 'blob'
       })
       .then(res=>{
-        if(res.data && res.data.files && res.data.files.length){
-          const files = res.data.files;
-          files.forEach((file) => {
-            var newFile = new File([new Blob([file.file.data], { type: file.contentType })], file.filename, { type: file.contentType });
-            newFile.uid = new Date().getTime();
-            this.handleUpload2(newFile,file.file.data);
+        if(res.data){
+          const blob = res.data;
+          const zip = new JSZip();
+          zip.loadAsync(blob).then(zip => {
+            const filePromises = Object.keys(zip.files).map(filename => {
+              const file = zip.files[filename];
+              return file.async('blob').then(fileBlob => {
+                const fileObject = new File([fileBlob], filename, {
+                  type: fileBlob.type,
+                });
+                this.handleUpload(fileObject); // 上传处理
+              });
+            });
+            Promise.all(filePromises).then(() => {
+              this.geo.fileDetail.forEach((item, index) => {
+                  this.geo.fileDetail[index].name = this.tempGeo['fileDetail'][index].name;
+                  this.geo.fileDetail[index].airtight = this.tempGeo['fileDetail'][index].airtight;
+              });
+              this.geo.wireframe = this.tempGeo.wireframe;
+              this.geo.factor = this.tempGeo.factor;
+              this.collect();
+            }).catch(error => {
+              this.$notify({
+                title: 'STL文件載入提示',
+                message: `STL 文件載入異常。`,
+                type: 'error'
+              });
+            });
           });
-          this.$nextTick(()=>{
-            this.geo.fileDetail.forEach((item,index)=>{
-              this.geo.fileDetail[index].name = this.tempFileDetail[index].name;
-              this.geo.fileDetail[index].airtight = this.tempFileDetail[index].airtight
-            })
-          })
         }
       })
       .catch(e=>{})
@@ -803,43 +805,8 @@ export default {
 
     // 儲存上傳文件
     saveFiles(){
-      if(!this.stlFileChange){
-        this.$notify({
-          title: 'STL文件儲存提示',
-          message: `STL 文件儲存無更動。`,
-          type: 'warning'
-        });
-        return
-      }
       let formData = new FormData();
-      let totalFileSize = 0;
-      const SINGLE_MAX = 10*1024*1024;
-      const TOTAL_MAX = 30*1024*1024
-      for (let i = 0; i < this.geo.fileList.length; i++) {
-        let file = this.geo.fileList[i];
-        if(file.size > SINGLE_MAX){
-          formData = null;
-          this.$notify({
-            title: 'STL文件儲存提示',
-            message: `單個 STL 檔案大小超過 10 MB，故本次不進行儲存。`,
-            type: 'error'
-          });
-          return;
-        }
-        else {
-          totalFileSize += file.size;
-          if(totalFileSize > TOTAL_MAX){
-            formData = null
-            this.$notify({
-              title: 'STL文件儲存提示',
-              message: `STL 檔案大小總計超過 30 MB，故本次不進行儲存。`,
-              type: 'error'
-            });
-            return;
-          }
-          else formData.append('files[]',file); 
-        }
-      }
+      for (let i = 0; i < this.geo.fileList.length; i++) formData.append('files[]',this.geo.fileList[i]); 
       axios.post(`/run/newTopic/addFiles/${this.uuid}`,formData,{
         headers:{
           'token':jsCookie.get('token')

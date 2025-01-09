@@ -88,183 +88,83 @@ router.delete('/run/newTopic/delete/:uuid',(req, res) => {
 const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage }); // 設定最大上傳大小為 50MB
-const stlModel = require('../models/stlModel');
-const { GridFSBucket } = require('mongodb');
-const { getDb } = require('../db/db')
+
+const fs = require('fs');
+const path = require('path');
+
+const relativePath = '../../../pinns/uploads';
 
 // 新增或修改文件
 router.post('/run/newTopic/addFiles/:uuid', upload.array('files[]'), (req, res) => {
-  const bucket = new GridFSBucket(getDb(), { bucketName: 'stlFiles' });
-  var token = req.headers['token'];
-  var uuid = req.params.uuid;
-
-  stlModel.findOne({ token: token, uuid: uuid })
-  .then((data) => {
-    if (data && data.fieldIds && data.fieldIds.length !== 0){
-      const fieldIds = data.fieldIds;
-      var deletePromise = fieldIds.map((fileId) => {
-        return new Promise((resolve, reject) => {
-          bucket.delete(fileId, (err) => {})
-          .catch((e)=>{}).finally(()=>{resolve()});
-        });
+  try{
+    const token = req.headers.token;
+    const uuid = req.params.uuid;
+    const targetDir = path.join(__dirname, relativePath ,token, uuid);
+    if (fs.existsSync(targetDir)) { // 若已存在資料則先清除所有檔案
+      const files = fs.readdirSync(targetDir);
+      files.forEach(file => {
+        const filePath = path.join(targetDir, file);
+        fs.unlinkSync(filePath);
       });
-  
-      Promise.all(deletePromise)
-      .then(()=>{
-        saveFiles(req,res)
-      })
-    }
-    else saveFiles(req,res)
-  });
-});
+    } 
+    else fs.mkdirSync(targetDir, { recursive: true });
 
-// 儲存文件
-function saveFiles(req,res){
-  const bucket = new GridFSBucket(getDb(), { bucketName: 'stlFiles' });
-  var token = req.headers['token'];
-  var uuid = req.params.uuid;
-
-  if (!req.files || req.files.length === 0) {
-    return stlModel.findOneAndReplace(
-      { token: token, uuid: uuid },
-      { token:token, uuid:uuid, fieldIds:[] },
-      { upsert: true}
-    ).then((data) => {return res.send({type: 'success',message: 'Files Saved Successfully'});})
-    .catch((err) => {return res.send({type: 'error',message: 'Failed to Save File IDs' });});
+    const files = req.files;
+    files.forEach(file => {
+      const filePath = path.join(targetDir, file.originalname);
+      fs.writeFileSync(filePath, file.buffer);
+    });
+    res.send({status:'success',message:'STL文件儲存成功！'});
   }
-
-  const filePromises = req.files.map((file) => {
-    return new Promise((resolve, reject) => {
-      const uploadStream = bucket.openUploadStream(file.originalname, {
-        contentType: file.mimetype,
-      });
-      uploadStream.end(file.buffer);
-      uploadStream.on('finish', () => {
-        resolve({
-          fieldname: file.fieldname,
-          originalname: file.originalname,
-          encoding: file.encoding,
-          mimetype: file.mimetype,
-          size: file.size,
-          fileId: uploadStream.id,
-        });
-      });
-
-      uploadStream.on('error', (err) => {
-        reject(err);
-      });
-    });
-  });
-  
-  Promise.all(filePromises)
-  .then((files) => {
-    var output = files.map(item=>item.fileId);
-    stlModel.findOneAndReplace(
-      { token: token, uuid: uuid },
-      { token:token, uuid:uuid, fieldIds:output },
-      { upsert: true}
-    )
-    .then((data) => {
-      return res.send({
-        type: 'success',
-        message: 'Files Saved Successfully',
-      });
-    })
-    .catch((err) => {
-      return res.send({
-        type: 'error',
-        message: 'Failed to Save File IDs'
-      });
-    });
-  })
-}
-
+  catch(e){
+    res.send({status:'error',message:'STL文件儲存失敗！'});
+  }
+});
 
 // 查詢文件
+const archiver = require('archiver');
 router.get('/run/newTopic/getFiles/:uuid', (req, res) => {
-  const token = req.headers['token'];
-  const uuid = req.params.uuid;
+  try{
+    const token = req.headers.token; // 获取 token
+    const uuid = req.params.uuid;   // 获取 uuid
+    const targetDir = path.join(__dirname, relativePath, token, uuid);
+  
+    fs.readdir(targetDir, (err, files) => {
+      const zip = archiver('zip', {zlib: { level: 9 }});
 
-  stlModel.findOne({ token: token, uuid: uuid })
-  .then((data) => {
-    if (!data || !data.fieldIds || data.fieldIds.length === 0) return res.send([])
-    const fieldIds = data.fieldIds;
-    const bucket = new GridFSBucket(getDb(), { bucketName: 'stlFiles' });
-    const filePromises = fieldIds.map((fieldId) => {
-      return new Promise((resolve, reject) => {
-        const downloadStream = bucket.openDownloadStream(fieldId);
-        const chunks = [];
-        let fileMetadata = {};
-        downloadStream.on('file', (file) => {
-          fileMetadata = {
-            fieldId,
-            filename: file.filename,
-            contentType: file.contentType,
-            size: file.length,
-          };
-        });
-        downloadStream.on('data', (chunk) => {
-          chunks.push(chunk);
-        });
-        downloadStream.on('end', () => {
-          const fileBuffer = Buffer.concat(chunks);
-          resolve({
-            ...fileMetadata,
-            file: fileBuffer,
-          });
-        });
-        downloadStream.on('error', (err) => {reject(err);});
+      res.attachment('files.zip');
+      zip.pipe(res);
+
+      files.forEach(file => {
+        const filePath = path.join(targetDir, file);
+        zip.file(filePath, { name: file });
       });
+
+      zip.finalize();
     });
-    Promise.all(filePromises)
-    .then((files) => {
-      res.set('Content-Type', 'application/json');
-      res.send({
-        type: 'success',
-        message: 'Files fetched successfully',
-        files,
-      });
-    })
-    .catch((err) => {return res.send({type: 'error',message: 'Failed to fetch files'});});
-  })
-  .catch((err) => {return res.send({type: 'error',message: 'Failed to find file IDs in database'});});
+  }
+  catch(e){
+    res.send({
+      status: 'error',
+      message:'Failed To Retrieved Files'
+    });
+  }
 });
 
-// 刪除資料集 - 1
+// 刪除資料
 router.delete('/run/newTopic/deleteAllFiles/:uuid',(req,res)=>{
-  const bucket = new GridFSBucket(getDb(), { bucketName: 'stlFiles' });
-  var token = req.headers['token'];
-  var uuid = req.params.uuid;
-  stlModel.findOne({ token: token, uuid: uuid })
-  .then((data) => {
-    if (data && data.fieldIds && data.fieldIds.length !== 0){
-      const fieldIds = data.fieldIds;
-      var deletePromise = fieldIds.map((fileId) => {
-        return new Promise((resolve, reject) => {
-          bucket.delete(fileId, (err) => {})
-          .catch((e)=>{}).finally(()=>{resolve()});
-        });
-      });
-  
-      Promise.all(deletePromise)
-      .then(()=>{
-        deleteData(req,res)
-      })
-    }
-    else deleteData(req,res)
-  });
+  const token = req.headers.token;
+  const uuid = req.params.uuid;
+  const targetDir = path.join(__dirname, relativePath ,token, uuid);
+  if (fs.existsSync(targetDir)) {
+    const files = fs.readdirSync(targetDir);
+    files.forEach(file => {
+      const filePath = path.join(targetDir, file);
+      fs.unlinkSync(filePath);
+    });
+    fs.rmdirSync(targetDir);
+  }
+  res.send('success')
 })
 
-// 刪除資料集 - 2
-function deleteData(req,res){
-  var token = req.headers['token'];
-  var uuid = req.params.uuid;
-  stlModel.findOneAndDelete({ token: token, uuid: uuid })
-  .then((data,err)=>{
-    res.send('success')
-  })
-  .catch(e=>{
-    res.send('error')
-  })
-}
 module.exports = router;
