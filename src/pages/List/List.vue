@@ -35,7 +35,7 @@ import jsCookie from 'js-cookie';
 export default {
     name:'List',
     mounted(){
-        this.ws = new WebSocket('ws://localhost:3000');
+        this.ws = new WebSocket(`ws://${window.location.hostname}:3000`);
         this.ws.onopen = () => {
             this.$message({type: 'success',message: 'WebSocket Connection Established'});
         };
