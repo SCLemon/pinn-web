@@ -111,7 +111,8 @@ function saveFiles(files,src,uuid){
 }
 // Step 3. 執行 python module
 var currentProcess = 0;
-var child = {}; // 當前運行執行緒
+var child = undefined; // 當前運行執行緒
+var log = '';
 async function runModule(){
     const res = await fileModel.findOne({done:false})
     if(res == null){
@@ -129,12 +130,15 @@ async function runModule(){
     const args = ['exec', containerID, 'python', `modulus-sym/examples/${res.uuid}/${res.uuid}.py`];
     child = spawn(command, args);
     child.stdout.on('data', (data) => {
-        console.log(`stdout: ${data}`);
+        log += `${data} <br>`
+        console.log(`${data}`);
     });
     child.stderr.on('data', (data) => {
-        console.error(`stderr: ${data}`);
+        log += `${data} <br>`
+        console.error(`${data}`);
     });
     child.on('close', async (code) => {
+        log += `child process exited with code ${code} <br>`
         console.log(`child process exited with code ${code}`);
         await updateFileStatus(target.uuid, 'Ready');
         await replaceFile(target.uuid, target.name);
@@ -142,6 +146,25 @@ async function runModule(){
         sendMail(target)
     });
 }
+
+const WebSocket = require('ws');
+const wss = new WebSocket.Server({ port: 3000 });
+wss.on('connection', (ws) => {
+    ws.send(log);
+    if(child){
+        child.stdout.on('data', (data) => {
+            ws.send(data)
+        });
+        child.stderr.on('data', (data) => {
+            ws.send(data)
+        });
+        child.on('close', async (code) => {
+            ws.send(`child process exited with code ${code}`);
+        });
+    }
+});
+
+
 // 修改狀態 Running or Ready <-- 無需修改
 async function updateFileStatus(uuid,status){
     var done = status == 'Ready';

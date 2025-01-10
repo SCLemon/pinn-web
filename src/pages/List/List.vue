@@ -1,6 +1,10 @@
 <template>
     <div class="body" ref="body">
-        <div class="title"><div class="top" @click="back()"><i class="fa-solid fa-arrow-left arrow"></i>back</div>專案列表</div>
+        <el-dialog title="運算過程" :visible.sync="dialogTableVisible" width="70%">
+            <div class="stopBox"><el-button  class="stop" :type="wsScroll?'danger':'success'" @click="wsScroll=!wsScroll">{{ wsScroll?'暫停滾動':'開啟滾動' }}</el-button></div>
+            <div class="output"  ref="output" v-html="wsResponse"></div>
+        </el-dialog> 
+        <div class="title"><div class="top" @click="back()"><i class="fa-solid fa-arrow-left arrow"></i>back</div>專案列表 <div class="log"><el-button plain @click="dialogTableVisible=true">運算過程</el-button></div></div>
         <div class="main">
             <el-table empty-text="暫無數據" :data="tableData.filter(data => !search || data.filename.toLowerCase().includes(search.toLowerCase()))" style="width: 100%" :height="550" class="table" ref="table">
                 <el-table-column label="建立時間" prop="date"></el-table-column>
@@ -31,23 +35,36 @@ import jsCookie from 'js-cookie';
 export default {
     name:'List',
     mounted(){
-      this.vantaEffect = DOT({
-        el: this.$refs.body,
-        mouseControls: true,
-        touchControls: true,
-        gyroControls: false,
-        minHeight: 200.00,
-        minWidth: 200.00,
-        scale: 1.00,
-        scaleMobile: 1.00,
-        color: 0x20e4ff,
-        color2: 0xe3e3,
-        backgroundColor: 0xffffff
-      })
-      this.getList();
-      this.timer = setInterval(() => {
+        this.ws = new WebSocket('ws://localhost:3000');
+        this.ws.onopen = () => {
+            this.$message({type: 'success',message: 'WebSocket Connection Established'});
+        };
+        this.ws.onmessage = (event) => {
+            this.wsResponse += event.data + '<br>';
+        };
+        this.ws.onerror = (error) => {
+            this.$message({type: 'error',message: 'WebSocket Connection Error'});
+        };
+
+
+        this.vantaEffect = DOT({
+            el: this.$refs.body,
+            mouseControls: true,
+            touchControls: true,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            scale: 1.00,
+            scaleMobile: 1.00,
+            color: 0x20e4ff,
+            color2: 0xe3e3,
+            backgroundColor: 0xffffff
+        })
+
         this.getList();
-      }, 3000);
+        this.timer = setInterval(() => {
+            this.getList();
+        }, 3000);
     },
     data(){
         return {
@@ -56,7 +73,24 @@ export default {
             search: '',
             isLoading:true,
             timer:0,
+            ws:{},
+            wsResponse:'',
+            wsScroll:true,
+            dialogTableVisible:false
         }
+    },
+    watch:{
+        wsResponse:{
+            deep:true,
+            handler(value){
+                var el = this.$refs.output;
+                if(el && this.wsScroll){
+                    this.$nextTick(function(){
+                        el.scrollTop = el.scrollHeight;
+                    })
+                }
+            }
+        },
     },
     methods:{
         getList(){
@@ -115,6 +149,7 @@ export default {
     beforeDestroy(){
       if (this.vantaEffect) this.vantaEffect.destroy();
       clearInterval(this.timer)
+      this.ws.close();
     },
     updated(){
         this.$refs.table.style='background:transparent;'
@@ -147,6 +182,31 @@ export default {
         line-height: 200px;
         font-size: 18px;
     }
+    .log{
+        position: absolute;
+        top:0;
+        right: 3%;
+        height: 200px;
+        line-height: 200px;
+        font-size: 18px;
+    }
+    .output{
+        width: 97%;
+        height: 400px;
+        margin: 0 auto;
+        overflow-y:scroll;
+        padding: 5px;
+        padding-left: 10px;
+        border: 1px solid rgb(211, 211, 211);
+        word-wrap: break-word;
+        white-space: normal;
+    }
+    .stopBox{
+        width: 99%;
+        display: flex;
+        justify-content: right;
+        margin-bottom: 10px;
+    }
     .top:hover{
         cursor: pointer;
     }
@@ -158,6 +218,5 @@ export default {
     }
     .skeleton{
         text-align: left;
-        
     }
 </style>
