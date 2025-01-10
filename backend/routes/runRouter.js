@@ -144,6 +144,7 @@ async function runModule(){
         await replaceFile(target.uuid, target.name);
         await runModule();
         sendMail(target)
+        child = null;
     });
 }
 
@@ -153,10 +154,10 @@ wss.on('connection', (ws) => {
     ws.send(log);
     if(child){
         child.stdout.on('data', (data) => {
-            ws.send(data)
+            ws.send(data.toString())
         });
         child.stderr.on('data', (data) => {
-            ws.send(data)
+            ws.send(data.toString())
         });
         child.on('close', async (code) => {
             ws.send(`child process exited with code ${code}`);

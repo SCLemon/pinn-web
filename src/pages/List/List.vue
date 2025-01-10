@@ -2,7 +2,7 @@
     <div class="body" ref="body">
         <el-dialog title="運算過程" :visible.sync="dialogTableVisible" width="70%">
             <div class="stopBox"><el-button  class="stop" :type="wsScroll?'danger':'success'" @click="wsScroll=!wsScroll">{{ wsScroll?'暫停滾動':'開啟滾動' }}</el-button></div>
-            <div class="output"  ref="output" v-html="wsResponse"></div>
+            <pre class="output"  ref="output" v-html="wsResponse"></pre>
         </el-dialog> 
         <div class="title"><div class="top" @click="back()"><i class="fa-solid fa-arrow-left arrow"></i>back</div>專案列表 <div class="log"><el-button plain @click="dialogTableVisible=true">運算過程</el-button></div></div>
         <div class="main">
@@ -40,7 +40,7 @@ export default {
             this.$message({type: 'success',message: 'WebSocket Connection Established'});
         };
         this.ws.onmessage = (event) => {
-            this.wsResponse += event.data + '<br>';
+            this.wsResponse += event.data;
         };
         this.ws.onerror = (error) => {
             this.$message({type: 'error',message: 'WebSocket Connection Error'});
@@ -84,6 +84,7 @@ export default {
             deep:true,
             handler(value){
                 var el = this.$refs.output;
+                el.style.whiteSpace = 'pre-wrap';
                 if(el && this.wsScroll){
                     this.$nextTick(function(){
                         el.scrollTop = el.scrollHeight;
@@ -193,6 +194,7 @@ export default {
     .output{
         width: 97%;
         height: 400px;
+        line-height: 1.25;
         margin: 0 auto;
         overflow-y:scroll;
         padding: 5px;
