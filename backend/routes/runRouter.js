@@ -112,7 +112,47 @@ function saveFiles(files,src,uuid){
 // Step 3. 執行 python module
 var currentProcess = 0;
 var child = undefined; // 當前運行執行緒
-var log = '';
+
+// log 路徑
+const relativeLogPath = '../../../pinns_log'
+var logFilePath = '';
+
+// websocket
+const WebSocket = require('ws');
+const wss = new WebSocket.Server({ port: 3000 });
+wss.on('connection', (ws) => {
+    if(logFilePath!=''){
+        try {
+            const data = fs.readFileSync(logFilePath, 'utf8');
+            ws.send({
+                idx:currentProcess,
+                log: JSON.stringify(data)
+            });
+        } catch (err) {}
+    }
+
+    if(child){
+        child.stdout.on('data', (data) => {
+            ws.send({
+                idx:currentProcess,
+                log: data.toString()
+            })
+        });
+        child.stderr.on('data', (data) => {
+            ws.send({
+                idx:currentProcess,
+                log: data.toString()
+            })
+        });
+        child.on('close', async (code) => {
+            ws.send({
+                idx:currentProcess,
+                log: `child process exited with code ${code}`
+            });
+        });
+    }
+});
+
 async function runModule(){
     const res = await fileModel.findOne({done:false})
     if(res == null){
@@ -126,44 +166,38 @@ async function runModule(){
     currentProcess = res.uuid;
     var target = res;
     await updateFileStatus(target.uuid,'Running');
+
+    // cmd
     const command = 'docker';
     const args = ['exec', containerID, 'python', `modulus-sym/examples/${res.uuid}/${res.uuid}.py`];
+
+    logFilePath = path.join(__dirname,relativeLogPath, `${res.uuid}.log`);
+    fs.writeFileSync(logFilePath, '', 'utf8');
+
     child = spawn(command, args);
     child.stdout.on('data', (data) => {
-        log += `${data} <br>`
-        console.log(`${data}`);
+        const output = `${data.toString()} <br>\n`;
+        console.log(output);
+        fs.appendFileSync(logFilePath, output, 'utf8');
     });
     child.stderr.on('data', (data) => {
-        log += `${data} <br>`
-        console.error(`${data}`);
+        const output = `${data.toString()} <br>\n`;
+        console.log(output);
+        fs.appendFileSync(logFilePath, output, 'utf8');
     });
     child.on('close', async (code) => {
-        log += `child process exited with code ${code} <br>`
-        console.log(`child process exited with code ${code}`);
+        const output = `child process exited with code ${code} <br>\n`;
+        console.log(output);
+        fs.appendFileSync(logFilePath, output, 'utf8'); // 最後的退出碼寫入檔案
+
         await updateFileStatus(target.uuid, 'Ready');
         await replaceFile(target.uuid, target.name);
         await runModule();
         sendMail(target)
         child = null;
+        logFilePath = '';
     });
 }
-
-const WebSocket = require('ws');
-const wss = new WebSocket.Server({ port: 3000 });
-wss.on('connection', (ws) => {
-    ws.send(log);
-    if(child){
-        child.stdout.on('data', (data) => {
-            ws.send(data.toString())
-        });
-        child.stderr.on('data', (data) => {
-            ws.send(data.toString())
-        });
-        child.on('close', async (code) => {
-            ws.send(`child process exited with code ${code}`);
-        });
-    }
-});
 
 
 // 修改狀態 Running or Ready <-- 無需修改
