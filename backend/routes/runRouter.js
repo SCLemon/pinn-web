@@ -124,31 +124,31 @@ wss.on('connection', (ws) => {
     if(logFilePath!=''){
         try {
             const data = fs.readFileSync(logFilePath, 'utf8');
-            ws.send({
+            ws.send(JSON.stringify({
                 idx:currentProcess,
-                log: JSON.stringify(data)
-            });
+                log: data
+            }));
         } catch (err) {}
     }
 
     if(child){
         child.stdout.on('data', (data) => {
-            ws.send({
+            ws.send(JSON.stringify({
                 idx:currentProcess,
                 log: data.toString()
-            })
+            }))
         });
         child.stderr.on('data', (data) => {
-            ws.send({
+            ws.send(JSON.stringify({
                 idx:currentProcess,
                 log: data.toString()
-            })
+            }))
         });
         child.on('close', async (code) => {
-            ws.send({
+            ws.send(JSON.stringify({
                 idx:currentProcess,
                 log: `child process exited with code ${code}`
-            });
+            }));
         });
     }
 });
@@ -170,23 +170,26 @@ async function runModule(){
     // cmd
     const command = 'docker';
     const args = ['exec', containerID, 'python', `modulus-sym/examples/${res.uuid}/${res.uuid}.py`];
-
-    logFilePath = path.join(__dirname,relativeLogPath, `${res.uuid}.log`);
+    
+    // 創建 log 文件
+    const logDir = path.join(__dirname, relativeLogPath);
+    if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+    logFilePath = path.join(logDir, `${res.uuid}.log`);
     fs.writeFileSync(logFilePath, '', 'utf8');
 
     child = spawn(command, args);
     child.stdout.on('data', (data) => {
-        const output = `${data.toString()} <br>\n`;
+        const output = `${data.toString()}\n`;
         console.log(output);
         fs.appendFileSync(logFilePath, output, 'utf8');
     });
     child.stderr.on('data', (data) => {
-        const output = `${data.toString()} <br>\n`;
+        const output = `${data.toString()}\n`;
         console.log(output);
         fs.appendFileSync(logFilePath, output, 'utf8');
     });
     child.on('close', async (code) => {
-        const output = `child process exited with code ${code} <br>\n`;
+        const output = `child process exited with code ${code}\n`;
         console.log(output);
         fs.appendFileSync(logFilePath, output, 'utf8'); // 最後的退出碼寫入檔案
 
@@ -351,5 +354,16 @@ function sendMail(target){
     })
     .catch(()=>{})
 }
+
+// 下載 log
+router.get('/run/log/download/:uuid',(req,res)=>{
+    var target = path.join(__dirname, relativeLogPath,`${req.params.uuid}.log`);
+    if (fs.existsSync(target)) {
+        res.download(target, (err) => {
+            if (err) res.send({status:'error',message:'Failed To Download Log File'});
+        });
+    } 
+    else res.send({status:'error',message:'Failed To Download Log File'});
+})
 
 module.exports = router;

@@ -2,9 +2,9 @@
     <div class="body" ref="body">
         <el-dialog title="運算過程" :visible.sync="dialogTableVisible" width="70%">
             <div class="stopBox"><el-button  class="stop" :type="wsScroll?'danger':'success'" @click="wsScroll=!wsScroll">{{ wsScroll?'暫停滾動':'開啟滾動' }}</el-button></div>
-            <pre class="output"  ref="output" v-html="wsResponse"></pre>
+            <pre class="output"  ref="output" v-html="showResponse"></pre>
         </el-dialog> 
-        <div class="title"><div class="top" @click="back()"><i class="fa-solid fa-arrow-left arrow"></i>back</div>專案列表 <div class="log"><el-button plain @click="dialogTableVisible=true">運算過程</el-button></div></div>
+        <div class="title"><div class="top" @click="back()"><i class="fa-solid fa-arrow-left arrow"></i>back</div>專案列表</div>
         <div class="main">
             <el-table empty-text="暫無數據" :data="tableData.filter(data => !search || data.filename.toLowerCase().includes(search.toLowerCase()))" style="width: 100%" :height="550" class="table" ref="table">
                 <el-table-column label="建立時間" prop="date"></el-table-column>
@@ -19,6 +19,7 @@
                         <el-input v-model="search" size="mini" placeholder="輸入關鍵字搜索"/>
                     </template>
                     <template slot-scope="scope">
+                        <el-button size="mini" @click="(scope.row.status =='Running')?handleShowResponse(scope.row.id):handleDownloadResponse(scope.row.id)" :disabled="scope.row.status == 'Queuing'">運算</el-button>
                         <el-button size="mini" @click="(scope.row.status =='Ready' && !isDownload[scope.$index])?handleDownload(scope.row.output,scope.row.outputRoute,scope.$index):''" :disabled="scope.row.status !='Ready' || isDownload[scope.$index]">下載</el-button>
                         <el-button size="mini" type="danger" @click="scope.row.status !='Running'?handleDelete(scope.row.id,scope.row.inputRoute,scope.row.outputRoute):handleKill(scope.row.id)">{{ scope.row.status!='Running'?'刪除':'中止' }}</el-button>
                     </template>
@@ -40,7 +41,9 @@ export default {
             this.$message({type: 'success',message: 'WebSocket Connection Established'});
         };
         this.ws.onmessage = (event) => {
-            this.wsResponse += event.data.log;
+            var data = JSON.parse(event.data)
+            this.wsResponse[data.idx] += data.log?data.log:'';
+            if(this.currentLogID) this.showResponse = this.wsResponse[this.currentLogID];
         };
         this.ws.onerror = (error) => {
             this.$message({type: 'error',message: 'WebSocket Connection Error'});
@@ -74,17 +77,19 @@ export default {
             isLoading:true,
             timer:0,
             ws:{},
-            wsResponse:'',
+            wsResponse:{},
+            showResponse:'',
+            currentLogID:undefined,
             wsScroll:true,
             dialogTableVisible:false
         }
     },
     watch:{
-        wsResponse:{
+        showResponse:{
             deep:true,
             handler(value){
                 var el = this.$refs.output;
-                el.style.whiteSpace = 'pre-wrap';
+                if(el) el.style.whiteSpace = 'pre-wrap';
                 if(el && this.wsScroll){
                     this.$nextTick(function(){
                         el.scrollTop = el.scrollHeight;
@@ -146,6 +151,23 @@ export default {
             .catch(e=>console.log(e))
             }).catch(() => {});
         },
+        handleShowResponse(idx){
+            this.dialogTableVisible=true;
+            this.currentLogID = idx;
+        },
+        handleDownloadResponse(idx){
+            axios.get(`/run/log/download/${idx}`, {
+                responseType: 'blob',
+            })
+            .then((response) => {
+                const blob = response.data;
+                const link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                link.download = `${idx}.log`;
+                link.click();
+            })
+            .catch((error) => {});
+        }
     },
     beforeDestroy(){
       if (this.vantaEffect) this.vantaEffect.destroy();
@@ -179,14 +201,6 @@ export default {
         position: absolute;
         top:0;
         left: 3%;
-        height: 200px;
-        line-height: 200px;
-        font-size: 18px;
-    }
-    .log{
-        position: absolute;
-        top:0;
-        right: 3%;
         height: 200px;
         line-height: 200px;
         font-size: 18px;
