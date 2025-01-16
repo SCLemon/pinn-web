@@ -181,24 +181,24 @@ async function runModule(){
     child.stdout.on('data', (data) => {
         const output = `${data.toString()}\n`;
         console.log(output);
-        fs.appendFileSync(logFilePath, output, 'utf8');
+        try{fs.appendFileSync(logFilePath, output, 'utf8');}catch(e){}
     });
     child.stderr.on('data', (data) => {
         const output = `${data.toString()}\n`;
         console.log(output);
-        fs.appendFileSync(logFilePath, output, 'utf8');
+        try{fs.appendFileSync(logFilePath, output, 'utf8');}catch(e){}
     });
     child.on('close', async (code) => {
         const output = `child process exited with code ${code}\n`;
         console.log(output);
-        fs.appendFileSync(logFilePath, output, 'utf8'); // 最後的退出碼寫入檔案
+        
+        try{fs.appendFileSync(logFilePath, output, 'utf8');}catch(e){}
 
         await updateFileStatus(target.uuid, 'Ready');
         await replaceFile(target.uuid, target.name);
         await runModule();
         sendMail(target)
         child = null;
-        logFilePath = '';
     });
 }
 
