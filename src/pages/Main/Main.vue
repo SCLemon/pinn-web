@@ -477,6 +477,7 @@ export default {
         file:file,
         name:'',
         airtight:"True",
+        identifier:file.name,
       })
       this.$bus.$emit('loadStlFile',file,{
         wireframe:this.geo.wireframe,
@@ -780,13 +781,16 @@ export default {
                   type: fileBlob.type,
                 });
                 fileObject.uid = new Date().getTime();
-                this.handleUpload(fileObject); // 上传处理
+                this.handleUpload(fileObject);
               });
             });
             Promise.all(filePromises).then(() => {
-              this.geo.fileDetail.forEach((item, index) => {
-                  this.geo.fileDetail[index].name = this.tempGeo['fileDetail'][index].name;
-                  this.geo.fileDetail[index].airtight = this.tempGeo['fileDetail'][index].airtight;
+              this.geo.fileDetail.forEach((item, idx) => {
+                const matchingGeo = this.tempGeo.fileDetail.find(geo => item.file.name === geo.identifier);
+                if (matchingGeo) {
+                    this.geo.fileDetail[idx].name = matchingGeo.name;
+                    this.geo.fileDetail[idx].airtight = matchingGeo.airtight;
+                }
               });
               this.geo.wireframe = this.tempGeo.wireframe;
               this.geo.factor = this.tempGeo.factor;
