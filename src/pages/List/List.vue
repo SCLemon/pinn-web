@@ -40,7 +40,7 @@ export default {
             this.$message({type: 'success',message: 'WebSocket Connection Established'});
         };
         this.ws.onmessage = (event) => {
-            this.wsResponse += event.data;
+            this.wsResponse += event.data.log;
         };
         this.ws.onerror = (error) => {
             this.$message({type: 'error',message: 'WebSocket Connection Error'});
