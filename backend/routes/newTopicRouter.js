@@ -92,7 +92,7 @@ const upload = multer({ storage: storage }); // 設定最大上傳大小為 50MB
 const fs = require('fs');
 const path = require('path');
 
-const relativePath = '../../../pinns/uploads';
+const relativePath = '../../../pinns_file';
 
 // 新增或修改文件
 router.post('/run/newTopic/addFiles/:uuid', upload.array('files[]'), (req, res) => {
