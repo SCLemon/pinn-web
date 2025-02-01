@@ -42,6 +42,9 @@ def run(cfg: ModulusConfig) -> None:
     end_index = 4
     original_path_arr = original_path_arr[:start_index] + original_path_arr[end_index:]
     point_path = '/'.join(original_path_arr)
+
+    # 工作目錄
+    workingDir = os.path.dirname(point_path)
     
     <<MESH_BLOCK>>
     <<OTHER_BLOCKS>>

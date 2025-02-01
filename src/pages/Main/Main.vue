@@ -47,6 +47,16 @@
             </div>
           </div>
         </div>
+        <div class="title">Attachment 
+          <el-tooltip class="item" effect="dark" :content="attachmentTips" placement="right">
+            <i class="el-icon-warning-outline"></i>
+          </el-tooltip>
+        </div>
+        <div class="mesh">
+          <el-upload ref="upload2" action="" :http-request="handleUpload2" :on-preview="handlePreview" :on-remove="handleRemove2" multiple :file-list="attachment" >
+            <el-button slot="trigger" size="small" type="primary">選取文件</el-button>
+          </el-upload>
+        </div>
         <div class="geo_subTitle">Center</div>
         <div class="center">
           <div class="pos-box">
@@ -168,7 +178,7 @@ export default {
           x:0,y:0,z:0
         },
         fileList:[], // 文件呈現用
-        fileDetail:[] // 文件輸出用
+        fileDetail:[], // 文件輸出用
       },
       hydraTemp:{
         defaults: {
@@ -192,6 +202,9 @@ export default {
         },
         run_mode: "train"
       },
+      // attachment
+      attachment:[],
+      attachmentTips:`資料儲存路徑為: workingDir/user_data`,
       // functions block
       layout:[],
       orderedLayout:[],
@@ -308,6 +321,12 @@ export default {
         this.isDraggable = true;
       }
     },
+    openListPage(){
+      if(!this.isOpenedPage || this.isOpenedPage.closed){
+        this.isOpenedPage = window.open('/#/list', '_blank');
+      }
+    },
+
     // 離開前檢測
     handleBeforeUnload(event){
       if (!this.isSaved) {
@@ -334,6 +353,8 @@ export default {
       }
       else this.$router.replace('/gate').catch(()=>{});
     },
+
+
     // 監聽按鍵事件
     handleKeydown(event){
       if (event.ctrlKey && event.key.toLowerCase() === 's') {
@@ -367,6 +388,8 @@ export default {
     ctrlD(){
       this.execDownload();
     },
+
+
     // geometry block
     tips(type,msg) {
       const h = this.$createElement;
@@ -392,6 +415,7 @@ export default {
       this.geo.pos.y = y;
       this.geo.pos.z = z;
     },
+
 
     //parameter block
     addItem(){
@@ -437,7 +461,6 @@ export default {
           }
       }
     },
-
     // 取得 parameter 順序
     updateOrder(){
       this.orderedLayout = [...this.layout].sort((a, b) => {
@@ -447,6 +470,7 @@ export default {
         return a.y - b.y;
       });
     },
+
 
     // code block
     uploadCode(idx){
@@ -468,6 +492,8 @@ export default {
     handleTab(event){
       if (event.key === 'Tab') event.preventDefault();
     },
+
+
     // STL 文件處理
     handleUpload(file){
       var file = file.file || file
@@ -492,10 +518,22 @@ export default {
       this.$bus.$emit('removeStlFile',file.uid);
       this.geo.fileDetail = this.geo.fileDetail.filter(obj=> obj.uid != file.uid); // 移除文件輸出列表
     },
+
+    // 共用偽方法
     handlePreview(file) {
       return
     },
 
+    // attachment 文件處理
+    handleUpload2(file){
+      var file = file.file || file;
+      this.attachment.push(file);
+    },
+    handleRemove2(file, fileList){
+      this.attachment = fileList
+    },
+
+    
     // 搜集參數配置
     collect(option){
       this.isSaved = false;
@@ -634,15 +672,21 @@ export default {
         this.isCreateYaml = false;
       })
     },
+
+
     // 發送代碼
     send(){
       this.isSending = true;
       const code = new File([this.originalCode], "main.py", { type: "text/plain" });
       const yaml = new File([this.outputYaml], "config.yaml", { type: "text/plain" });
+
       const formData = new FormData();
       for(var i=0;i<this.geo.fileList.length;i++) formData.append('stlFiles', this.geo.fileList[i],this.geo.fileList[i].name); 
+      for(var i=0;i<this.attachment.length;i++) formData.append('attachments', this.attachment[i],this.attachment[i].name); 
+
       formData.append('code',code);
       formData.append('yaml',yaml);
+
       axios.post(`/run/upload/${this.name}`,formData,{
         headers:{
           'Content-Type': 'multipart/form-data',
@@ -673,11 +717,8 @@ export default {
         this.isSending = false;
       })
     },
-    openListPage(){
-      if(!this.isOpenedPage || this.isOpenedPage.closed){
-        this.isOpenedPage = window.open('/#/list', '_blank');
-      }
-    },
+
+
     // 下載預覽程式碼
     execDownload(){
       const code = new File([this.originalCode], "main.py", { type: "text/plain" });
@@ -692,6 +733,8 @@ export default {
       link.click();
       URL.revokeObjectURL(link.href);
     },
+
+
     // 儲存資料
     saveFullData(type) {
       const dataToSave = JSON.parse(JSON.stringify({
@@ -738,6 +781,7 @@ export default {
       })
       
       this.saveFiles();
+      this.saveAttachments();
     },
     // 獲取歷史資料
     loadFullData(){
@@ -756,12 +800,14 @@ export default {
         });
         this.$nextTick(()=>{
           this.getFiles();
+          this.getAttachments();
         })
       })
       .catch(e=>{})
     },
 
-    // 獲取上傳文件
+
+    // 獲取 STL 上傳文件
     getFiles(){
       axios.get(`/run/newTopic/getFiles/${this.uuid}`,{
         headers:{
@@ -807,8 +853,7 @@ export default {
       })
       .catch(e=>{})
     },
-
-    // 儲存上傳文件
+    // 儲存 STL 上傳文件
     saveFiles(){
       let formData = new FormData();
       for (let i = 0; i < this.geo.fileList.length; i++) formData.append('files[]',this.geo.fileList[i]); 
@@ -832,6 +877,66 @@ export default {
         });
       })
     },
+
+
+    // 獲取 attachment 上傳文件
+    getAttachments(){
+      axios.get(`/run/newTopic/getAttachments/${this.uuid}`,{
+        headers:{
+          'token':jsCookie.get('token')
+        },
+        responseType: 'blob'
+      })
+      .then(res=>{
+        if(res.data){
+          const blob = res.data;
+          const zip = new JSZip();
+          zip.loadAsync(blob).then(zip => {
+            Object.keys(zip.files).map(filename => {
+              const file = zip.files[filename];
+              return file.async('blob').then(fileBlob => {
+                const fileObject = new File([fileBlob], filename, {
+                  type: fileBlob.type,
+                });
+                fileObject.uid = new Date().getTime();
+                this.handleUpload2(fileObject);
+              });
+            });
+          });
+        }
+      })
+      .catch(e=>{
+        this.$notify({
+          title: 'Attachment 文件載入提示',
+          message: `Attachment 文件載入異常。`,
+          type: 'error'
+        });
+      })
+    },
+    // 儲存 attachment 上傳文件
+    saveAttachments(){
+      let formData = new FormData();
+      for (let i = 0; i < this.attachment.length; i++) formData.append('files[]',this.attachment[i]); 
+      axios.post(`/run/newTopic/addAttachments/${this.uuid}`,formData,{
+        headers:{
+          'token':jsCookie.get('token')
+        }
+      })
+      .then(res=>{
+        this.$notify({
+            title: 'Attachments 文件儲存提示',
+            message: `Attachments 檔案儲存成功。`,
+            type: 'success'
+        });
+      })
+      .catch(e=>{
+        this.$notify({
+            title: 'Attachments 文件儲存提示',
+            message: `Attachments 檔案儲存失敗。`,
+            type: 'error'
+        });
+      })
+    }
   }
 }
 </script>

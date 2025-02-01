@@ -207,7 +207,7 @@ export default {
     }
     .output{
         width: 97%;
-        height: 400px;
+        height: 50vh;
         line-height: 1.25;
         margin: 0 auto;
         overflow-y:scroll;
