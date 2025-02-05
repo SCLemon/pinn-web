@@ -10,6 +10,7 @@
   "dependencies": {
     "@kitware/vtk.js": "^31.0.1",
     "axios": "^1.7.2",
+    "codemirror": "^5.65.18",
     "core-js": "^3.8.3",
     "element-ui": "^2.15.14",
     "highlight.js": "^11.10.0",
@@ -20,6 +21,7 @@
     "three": "^0.166.1",
     "vanta": "^0.5.24",
     "vue": "^2.6.14",
+    "vue-codemirror": "^4.0.6",
     "vue-grid-layout": "^2.4.0",
     "vue-router": "^3.6.5",
     "ws": "^8.18.0"

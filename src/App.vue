@@ -40,4 +40,8 @@ export default {
   align-items: start !important;
 }
 /* results end */
+
+.CodeMirror{
+  height: 100% !important;
+}
 </style>

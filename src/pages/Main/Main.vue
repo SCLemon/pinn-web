@@ -106,7 +106,7 @@
                   <input type="file" :ref="`${item.i}_code_file`" class="code_file" @change="handleUploadCode(item.i,item.type)">
                 </div>
                 <div class="inputCode">
-                  <textarea class="textArea" :ref="`${item.i}_textArea`" @keydown="handleTab" @focus="isDraggable=false" @blur="isDraggable=true" v-model="layout_values[`${item.i}_${item.type}`]"></textarea>
+                  <codemirror class="cm-editor" :options="cmOptions" :ref="`${item.i}_textArea`" @keydown="handleTab" @focus="isDraggable=false" @blur="isDraggable=true" v-model="layout_values[`${item.i}_${item.type}`]"></codemirror>
                 </div>
               </div>
           </grid-item>
@@ -135,12 +135,24 @@ import 'highlight.js/styles/atom-one-dark.css';
 import axios from 'axios';
 import jsCookie from 'js-cookie';
 import JSZip from 'jszip';
+
+// codemirror
+import { codemirror } from "vue-codemirror";
+import "codemirror/lib/codemirror.css";
+import "codemirror/mode/python/python.js";
+import "codemirror/addon/fold/foldgutter.css";
+import "codemirror/addon/fold/foldcode.js";
+import "codemirror/addon/fold/foldgutter.js";
+import "codemirror/addon/fold/indent-fold.js";
+import "codemirror/addon/fold/comment-fold.js";
+
 export default {
   name:'Main',
   components:{
     GridLayout: VueGridLayout.GridLayout,
     GridItem: VueGridLayout.GridItem,
-    StlViewer,CodeViewer
+    StlViewer,CodeViewer,
+    codemirror
   },
   mounted(){
     this.$bus.$on('setCenter',this.setCenter)
@@ -222,6 +234,17 @@ export default {
       totalCode:'',
       // code block
       isDraggable:true,
+      cmOptions: {
+        mode: "python",
+        theme: "default",
+        line:true,
+        lineNumbers: true,
+        lineWrapping: true,
+        viewportMargin:5,
+        autoRefresh:true,
+        foldGutter: true,
+        gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
+      }
     }
   },
   watch:{
@@ -1174,7 +1197,7 @@ export default {
     height: 280px;
     position: relative;
   }
-  .textArea{
+  .cm-editor{
     margin-top: 5px;
     width: 100%;
     height: 100%;
@@ -1183,8 +1206,10 @@ export default {
     position: absolute;
     top:0;
     left:0;
+    line-height: 1.5;
+    overflow-y: scroll;
   }
-  .textArea:focus{
+  .cm-editor:focus{
     outline: 0;
   }
   .send{
